@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- OUAGA CHAP - Splash Screen -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Fond rouge OUAGA CHAP -->
+    <item android:drawable="@color/splash_background" />
+
+    <!-- Logo centré -->
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@mipmap/launcher_icon" />
+    </item>
+</layer-list>

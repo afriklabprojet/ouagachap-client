@@ -1,0 +1,204 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - lcov.info - support/presentation/bloc/support_state.dart</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../../index.html" title="Click to go to top-level">top level</a> - <a href="index.html" title="Click to go to directory support/presentation/bloc">support/presentation/bloc</a> - support_state.dart</td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">lcov.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">44</td>
+            <td class="headerCovTableEntry">44</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-01-27 04:34:46</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">-</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+          </tr>
+                  <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">            Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>              : import 'package:equatable/equatable.dart';</span>
+<span id="L2"><span class="lineNum">       2</span>              : import '../../domain/entities/contact_info.dart';</span>
+<span id="L3"><span class="lineNum">       3</span>              : import '../../domain/entities/faq.dart';</span>
+<span id="L4"><span class="lineNum">       4</span>              : import '../../domain/entities/support_chat.dart';</span>
+<span id="L5"><span class="lineNum">       5</span>              : import '../../domain/entities/complaint.dart';</span>
+<span id="L6"><span class="lineNum">       6</span>              : </span>
+<span id="L7"><span class="lineNum">       7</span>              : enum SupportStatus { initial, loading, success, failure }</span>
+<span id="L8"><span class="lineNum">       8</span>              : </span>
+<span id="L9"><span class="lineNum">       9</span>              : class SupportState extends Equatable {</span>
+<span id="L10"><span class="lineNum">      10</span>              :   // General</span>
+<span id="L11"><span class="lineNum">      11</span>              :   final SupportStatus status;</span>
+<span id="L12"><span class="lineNum">      12</span>              :   final String? errorMessage;</span>
+<span id="L13"><span class="lineNum">      13</span>              : </span>
+<span id="L14"><span class="lineNum">      14</span>              :   // Contact Info</span>
+<span id="L15"><span class="lineNum">      15</span>              :   final ContactInfo? contactInfo;</span>
+<span id="L16"><span class="lineNum">      16</span>              : </span>
+<span id="L17"><span class="lineNum">      17</span>              :   // FAQs</span>
+<span id="L18"><span class="lineNum">      18</span>              :   final List&lt;Faq&gt; faqs;</span>
+<span id="L19"><span class="lineNum">      19</span>              :   final String selectedFaqCategory;</span>
+<span id="L20"><span class="lineNum">      20</span>              :   final String faqSearchQuery;</span>
+<span id="L21"><span class="lineNum">      21</span>              :   final bool faqsLoading;</span>
+<span id="L22"><span class="lineNum">      22</span>              : </span>
+<span id="L23"><span class="lineNum">      23</span>              :   // Chat</span>
+<span id="L24"><span class="lineNum">      24</span>              :   final List&lt;SupportChat&gt; chats;</span>
+<span id="L25"><span class="lineNum">      25</span>              :   final SupportChat? currentChat;</span>
+<span id="L26"><span class="lineNum">      26</span>              :   final List&lt;ChatMessage&gt; chatMessages;</span>
+<span id="L27"><span class="lineNum">      27</span>              :   final bool chatLoading;</span>
+<span id="L28"><span class="lineNum">      28</span>              :   final bool sendingMessage;</span>
+<span id="L29"><span class="lineNum">      29</span>              : </span>
+<span id="L30"><span class="lineNum">      30</span>              :   // Complaints</span>
+<span id="L31"><span class="lineNum">      31</span>              :   final List&lt;Complaint&gt; complaints;</span>
+<span id="L32"><span class="lineNum">      32</span>              :   final Complaint? currentComplaint;</span>
+<span id="L33"><span class="lineNum">      33</span>              :   final List&lt;ComplaintMessage&gt; complaintMessages;</span>
+<span id="L34"><span class="lineNum">      34</span>              :   final bool complaintsLoading;</span>
+<span id="L35"><span class="lineNum">      35</span>              :   final bool creatingComplaint;</span>
+<span id="L36"><span class="lineNum">      36</span>              : </span>
+<span id="L37"><span class="lineNum">      37</span> <span class="tlaGNC">           4 :   const SupportState({</span></span>
+<span id="L38"><span class="lineNum">      38</span>              :     this.status = SupportStatus.initial,</span>
+<span id="L39"><span class="lineNum">      39</span>              :     this.errorMessage,</span>
+<span id="L40"><span class="lineNum">      40</span>              :     this.contactInfo,</span>
+<span id="L41"><span class="lineNum">      41</span>              :     this.faqs = const [],</span>
+<span id="L42"><span class="lineNum">      42</span>              :     this.selectedFaqCategory = 'all',</span>
+<span id="L43"><span class="lineNum">      43</span>              :     this.faqSearchQuery = '',</span>
+<span id="L44"><span class="lineNum">      44</span>              :     this.faqsLoading = false,</span>
+<span id="L45"><span class="lineNum">      45</span>              :     this.chats = const [],</span>
+<span id="L46"><span class="lineNum">      46</span>              :     this.currentChat,</span>
+<span id="L47"><span class="lineNum">      47</span>              :     this.chatMessages = const [],</span>
+<span id="L48"><span class="lineNum">      48</span>              :     this.chatLoading = false,</span>
+<span id="L49"><span class="lineNum">      49</span>              :     this.sendingMessage = false,</span>
+<span id="L50"><span class="lineNum">      50</span>              :     this.complaints = const [],</span>
+<span id="L51"><span class="lineNum">      51</span>              :     this.currentComplaint,</span>
+<span id="L52"><span class="lineNum">      52</span>              :     this.complaintMessages = const [],</span>
+<span id="L53"><span class="lineNum">      53</span>              :     this.complaintsLoading = false,</span>
+<span id="L54"><span class="lineNum">      54</span>              :     this.creatingComplaint = false,</span>
+<span id="L55"><span class="lineNum">      55</span>              :   });</span>
+<span id="L56"><span class="lineNum">      56</span>              : </span>
+<span id="L57"><span class="lineNum">      57</span> <span class="tlaGNC">           5 :   bool get hasOpenChat =&gt; chats.any((chat) =&gt; chat.isOpen);</span></span>
+<span id="L58"><span class="lineNum">      58</span>              : </span>
+<span id="L59"><span class="lineNum">      59</span> <span class="tlaGNC">           1 :   int get totalUnreadMessages {</span></span>
+<span id="L60"><span class="lineNum">      60</span> <span class="tlaGNC">           5 :     int chatUnread = chats.fold(0, (sum, chat) =&gt; sum + chat.unreadCount);</span></span>
+<span id="L61"><span class="lineNum">      61</span> <span class="tlaGNC">           5 :     int complaintUnread = complaints.fold(0, (sum, c) =&gt; sum + c.unreadCount);</span></span>
+<span id="L62"><span class="lineNum">      62</span> <span class="tlaGNC">           1 :     return chatUnread + complaintUnread;</span></span>
+<span id="L63"><span class="lineNum">      63</span>              :   }</span>
+<span id="L64"><span class="lineNum">      64</span>              : </span>
+<span id="L65"><span class="lineNum">      65</span> <span class="tlaGNC">           2 :   SupportState copyWith({</span></span>
+<span id="L66"><span class="lineNum">      66</span>              :     SupportStatus? status,</span>
+<span id="L67"><span class="lineNum">      67</span>              :     String? errorMessage,</span>
+<span id="L68"><span class="lineNum">      68</span>              :     ContactInfo? contactInfo,</span>
+<span id="L69"><span class="lineNum">      69</span>              :     List&lt;Faq&gt;? faqs,</span>
+<span id="L70"><span class="lineNum">      70</span>              :     String? selectedFaqCategory,</span>
+<span id="L71"><span class="lineNum">      71</span>              :     String? faqSearchQuery,</span>
+<span id="L72"><span class="lineNum">      72</span>              :     bool? faqsLoading,</span>
+<span id="L73"><span class="lineNum">      73</span>              :     List&lt;SupportChat&gt;? chats,</span>
+<span id="L74"><span class="lineNum">      74</span>              :     SupportChat? currentChat,</span>
+<span id="L75"><span class="lineNum">      75</span>              :     List&lt;ChatMessage&gt;? chatMessages,</span>
+<span id="L76"><span class="lineNum">      76</span>              :     bool? chatLoading,</span>
+<span id="L77"><span class="lineNum">      77</span>              :     bool? sendingMessage,</span>
+<span id="L78"><span class="lineNum">      78</span>              :     List&lt;Complaint&gt;? complaints,</span>
+<span id="L79"><span class="lineNum">      79</span>              :     Complaint? currentComplaint,</span>
+<span id="L80"><span class="lineNum">      80</span>              :     List&lt;ComplaintMessage&gt;? complaintMessages,</span>
+<span id="L81"><span class="lineNum">      81</span>              :     bool? complaintsLoading,</span>
+<span id="L82"><span class="lineNum">      82</span>              :     bool? creatingComplaint,</span>
+<span id="L83"><span class="lineNum">      83</span>              :     bool clearError = false,</span>
+<span id="L84"><span class="lineNum">      84</span>              :     bool clearCurrentChat = false,</span>
+<span id="L85"><span class="lineNum">      85</span>              :     bool clearCurrentComplaint = false,</span>
+<span id="L86"><span class="lineNum">      86</span>              :   }) {</span>
+<span id="L87"><span class="lineNum">      87</span> <span class="tlaGNC">           2 :     return SupportState(</span></span>
+<span id="L88"><span class="lineNum">      88</span> <span class="tlaGNC">           2 :       status: status ?? this.status,</span></span>
+<span id="L89"><span class="lineNum">      89</span> <span class="tlaGNC">           2 :       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),</span></span>
+<span id="L90"><span class="lineNum">      90</span> <span class="tlaGNC">           2 :       contactInfo: contactInfo ?? this.contactInfo,</span></span>
+<span id="L91"><span class="lineNum">      91</span> <span class="tlaGNC">           2 :       faqs: faqs ?? this.faqs,</span></span>
+<span id="L92"><span class="lineNum">      92</span> <span class="tlaGNC">           2 :       selectedFaqCategory: selectedFaqCategory ?? this.selectedFaqCategory,</span></span>
+<span id="L93"><span class="lineNum">      93</span> <span class="tlaGNC">           2 :       faqSearchQuery: faqSearchQuery ?? this.faqSearchQuery,</span></span>
+<span id="L94"><span class="lineNum">      94</span> <span class="tlaGNC">           2 :       faqsLoading: faqsLoading ?? this.faqsLoading,</span></span>
+<span id="L95"><span class="lineNum">      95</span> <span class="tlaGNC">           2 :       chats: chats ?? this.chats,</span></span>
+<span id="L96"><span class="lineNum">      96</span> <span class="tlaGNC">           2 :       currentChat: clearCurrentChat ? null : (currentChat ?? this.currentChat),</span></span>
+<span id="L97"><span class="lineNum">      97</span> <span class="tlaGNC">           2 :       chatMessages: chatMessages ?? this.chatMessages,</span></span>
+<span id="L98"><span class="lineNum">      98</span> <span class="tlaGNC">           2 :       chatLoading: chatLoading ?? this.chatLoading,</span></span>
+<span id="L99"><span class="lineNum">      99</span> <span class="tlaGNC">           2 :       sendingMessage: sendingMessage ?? this.sendingMessage,</span></span>
+<span id="L100"><span class="lineNum">     100</span> <span class="tlaGNC">           2 :       complaints: complaints ?? this.complaints,</span></span>
+<span id="L101"><span class="lineNum">     101</span> <span class="tlaGNC">           2 :       currentComplaint: clearCurrentComplaint ? null : (currentComplaint ?? this.currentComplaint),</span></span>
+<span id="L102"><span class="lineNum">     102</span> <span class="tlaGNC">           2 :       complaintMessages: complaintMessages ?? this.complaintMessages,</span></span>
+<span id="L103"><span class="lineNum">     103</span> <span class="tlaGNC">           2 :       complaintsLoading: complaintsLoading ?? this.complaintsLoading,</span></span>
+<span id="L104"><span class="lineNum">     104</span> <span class="tlaGNC">           2 :       creatingComplaint: creatingComplaint ?? this.creatingComplaint,</span></span>
+<span id="L105"><span class="lineNum">     105</span>              :     );</span>
+<span id="L106"><span class="lineNum">     106</span>              :   }</span>
+<span id="L107"><span class="lineNum">     107</span>              : </span>
+<span id="L108"><span class="lineNum">     108</span> <span class="tlaGNC">           2 :   @override</span></span>
+<span id="L109"><span class="lineNum">     109</span> <span class="tlaGNC">           2 :   List&lt;Object?&gt; get props =&gt; [</span></span>
+<span id="L110"><span class="lineNum">     110</span> <span class="tlaGNC">           2 :         status,</span></span>
+<span id="L111"><span class="lineNum">     111</span> <span class="tlaGNC">           2 :         errorMessage,</span></span>
+<span id="L112"><span class="lineNum">     112</span> <span class="tlaGNC">           2 :         contactInfo,</span></span>
+<span id="L113"><span class="lineNum">     113</span> <span class="tlaGNC">           2 :         faqs,</span></span>
+<span id="L114"><span class="lineNum">     114</span> <span class="tlaGNC">           2 :         selectedFaqCategory,</span></span>
+<span id="L115"><span class="lineNum">     115</span> <span class="tlaGNC">           2 :         faqSearchQuery,</span></span>
+<span id="L116"><span class="lineNum">     116</span> <span class="tlaGNC">           2 :         faqsLoading,</span></span>
+<span id="L117"><span class="lineNum">     117</span> <span class="tlaGNC">           2 :         chats,</span></span>
+<span id="L118"><span class="lineNum">     118</span> <span class="tlaGNC">           2 :         currentChat,</span></span>
+<span id="L119"><span class="lineNum">     119</span> <span class="tlaGNC">           2 :         chatMessages,</span></span>
+<span id="L120"><span class="lineNum">     120</span> <span class="tlaGNC">           2 :         chatLoading,</span></span>
+<span id="L121"><span class="lineNum">     121</span> <span class="tlaGNC">           2 :         sendingMessage,</span></span>
+<span id="L122"><span class="lineNum">     122</span> <span class="tlaGNC">           2 :         complaints,</span></span>
+<span id="L123"><span class="lineNum">     123</span> <span class="tlaGNC">           2 :         currentComplaint,</span></span>
+<span id="L124"><span class="lineNum">     124</span> <span class="tlaGNC">           2 :         complaintMessages,</span></span>
+<span id="L125"><span class="lineNum">     125</span> <span class="tlaGNC">           2 :         complaintsLoading,</span></span>
+<span id="L126"><span class="lineNum">     126</span> <span class="tlaGNC">           2 :         creatingComplaint,</span></span>
+<span id="L127"><span class="lineNum">     127</span>              :       ];</span>
+<span id="L128"><span class="lineNum">     128</span>              : }</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com//linux-test-project/lcov" target="_parent">LCOV version 2.3.2-1</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

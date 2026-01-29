@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyBizlb0Hh25IgSVSOc17REX0Mao0dRq06M</string>
+	<key>GCM_SENDER_ID</key>
+	<string>441145504200</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>bf.ouagachap.ouagaChapClient</string>
+	<key>PROJECT_ID</key>
+	<string>ouaga-chap</string>
+	<key>STORAGE_BUCKET</key>
+	<string>ouaga-chap.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:441145504200:ios:8baf96c91cf034f0a810fd</string>
+</dict>
+</plist>

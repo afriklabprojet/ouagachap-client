@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "441145504200",
+    "project_id": "ouaga-chap",
+    "storage_bucket": "ouaga-chap.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:441145504200:android:ffb86c7e6b888c86a810fd",
+        "android_client_info": {
+          "package_name": "bf.ouagachap.ouaga_chap_client"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBn46jriuNG9ve_yCmsUdb-g15yKc4uP_k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

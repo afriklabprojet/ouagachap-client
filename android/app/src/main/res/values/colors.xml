@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Couleurs OUAGA CHAP - Client -->
+    <color name="primary">#E31E24</color>
+    <color name="primary_dark">#B71C1C</color>
+    <color name="primary_light">#FF5252</color>
+    <color name="accent">#F7C72C</color>
+    <color name="accent_dark">#F9A825</color>
+    
+    <!-- Couleur pour le launcher icon background -->
+    <color name="ic_launcher_background">#E31E24</color>
+    
+    <!-- Couleur pour les notifications -->
+    <color name="notification_color">#E31E24</color>
+    
+    <!-- Splash screen -->
+    <color name="splash_background">#E31E24</color>
+</resources>
