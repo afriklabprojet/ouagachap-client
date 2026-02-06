@@ -6,6 +6,7 @@ import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
 import 'core/di/injection.dart';
 import 'core/services/enhanced_notification_service.dart';
+import 'core/services/theme_service.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
 import 'features/order/presentation/bloc/order_bloc.dart';
@@ -67,13 +68,19 @@ class OuagaChapApp extends StatelessWidget {
           create: (_) => getIt<JekoPaymentBloc>(),
         ),
       ],
-      child: MaterialApp.router(
-        title: 'OUAGA CHAP',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.light,
-        routerConfig: AppRouter.router,
+      child: ListenableBuilder(
+        listenable: getIt<ThemeService>(),
+        builder: (context, _) {
+          final themeService = getIt<ThemeService>();
+          return MaterialApp.router(
+            title: 'OUAGA CHAP',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeService.themeMode,
+            routerConfig: AppRouter.router,
+          );
+        },
       ),
     );
   }

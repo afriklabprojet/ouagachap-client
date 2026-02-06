@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 import '../network/api_client.dart';
 import '../network/api_interceptor.dart';
+import '../services/cache_service.dart';
+import '../services/theme_service.dart';
 import '../../features/auth/data/datasources/auth_local_datasource.dart';
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
@@ -50,6 +52,14 @@ Future<void> configureDependencies() async {
   // External dependencies
   final sharedPreferences = await SharedPreferences.getInstance();
   getIt.registerSingleton<SharedPreferences>(sharedPreferences);
+  
+  // Core Services
+  getIt.registerSingleton<ThemeService>(
+    ThemeService(sharedPreferences),
+  );
+  getIt.registerSingleton<CacheService>(
+    CacheService(sharedPreferences),
+  );
   
   // Dio & API Client
   getIt.registerSingleton<Dio>(_createDio());
