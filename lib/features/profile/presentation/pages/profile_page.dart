@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/di/injection.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../core/services/theme_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/lottie_animations.dart';
 import '../../../../core/widgets/app_dialogs.dart';
+import '../../../../core/widgets/animations.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -123,6 +126,7 @@ class ProfilePage extends StatelessWidget {
                       title: 'Aide & Support',
                       onTap: () => context.go('${Routes.profile}/${Routes.support}'),
                     ),
+                    _buildThemeToggle(),
                     _buildMenuItem(
                       icon: Icons.info_outline,
                       title: 'À propos',
@@ -182,20 +186,56 @@ class ProfilePage extends StatelessWidget {
     required String title,
     required VoidCallback onTap,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: ListTile(
-        leading: Icon(icon, color: AppColors.primary),
-        title: Text(title),
-        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-        onTap: onTap,
-        shape: RoundedRectangleBorder(
+    return FadeInWidget(
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: ListTile(
+          leading: Icon(icon, color: AppColors.primary),
+          title: Text(title),
+          trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+          onTap: onTap,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeToggle() {
+    final themeService = getIt<ThemeService>();
+    return FadeInWidget(
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: ListenableBuilder(
+          listenable: themeService,
+          builder: (context, _) {
+            return ListTile(
+              leading: Icon(
+                themeService.isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                color: AppColors.primary,
+              ),
+              title: const Text('Thème sombre'),
+              trailing: Switch(
+                value: themeService.isDarkMode,
+                onChanged: (_) => themeService.toggleTheme(),
+                activeColor: AppColors.primary,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            );
+          },
         ),
       ),
     );

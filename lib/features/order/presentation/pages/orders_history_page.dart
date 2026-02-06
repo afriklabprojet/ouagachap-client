@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/widgets.dart';
+import '../../../../core/widgets/cards.dart';
+import '../../../../core/widgets/animations.dart';
 import '../../domain/entities/order.dart';
 import '../bloc/order_bloc.dart';
 import '../bloc/order_event.dart';
@@ -134,13 +136,31 @@ class _OrdersHistoryPageState extends State<OrdersHistoryPage>
         padding: const EdgeInsets.all(16),
         itemCount: orders.length,
         itemBuilder: (context, index) {
-          return _buildOrderCard(orders[index]);
+          final order = orders[index];
+          return SlideInWidget(
+            delay: Duration(milliseconds: 50 * index),
+            beginOffset: const Offset(-0.3, 0),
+            child: OrderCard(
+              orderNumber: '#${order.trackingNumber.substring(0, 8)}',
+              status: _getStatusLabel(order.status),
+              statusColor: _getStatusColor(order.status),
+              date: _formatDate(order.createdAt),
+              pickupAddress: order.pickupAddress,
+              deliveryAddress: order.deliveryAddress,
+              amount: '${order.price.toInt()} FCFA',
+              onTap: () => context.go('${Routes.orderDetails}/${order.id}'),
+              onTrack: order.isActive 
+                  ? () => context.go('${Routes.orderTracking}/${order.id}')
+                  : null,
+            ),
+          );
         },
       ),
     );
   }
 
-  Widget _buildOrderCard(Order order) {
+  // Conservé pour référence - ancien widget de carte de commande
+  Widget _buildOrderCardOld(Order order) {
     return GestureDetector(
       onTap: () => context.go('${Routes.orderDetails}/${order.id}'),
       child: Container(
