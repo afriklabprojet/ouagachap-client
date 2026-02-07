@@ -9,6 +9,7 @@ import '../../domain/entities/saved_address.dart';
 import '../bloc/address_bloc.dart';
 import '../bloc/address_event.dart';
 import '../bloc/address_state.dart';
+import 'map_picker_page.dart';
 
 class AddressesPage extends StatefulWidget {
   const AddressesPage({super.key});
@@ -462,10 +463,61 @@ class _AddressesPageState extends State<AddressesPage> {
                   TextField(
                     controller: addressController,
                     maxLines: 2,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Adresse complète *',
                       hintText: 'Ex: Quartier Patte d\'oie, Secteur 15',
-                      prefixIcon: Icon(Icons.location_on_outlined),
+                      prefixIcon: const Icon(Icons.location_on_outlined),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.map_outlined, color: AppColors.primary),
+                        tooltip: 'Choisir sur la carte',
+                        onPressed: () async {
+                          final result = await Navigator.push<Map<String, dynamic>>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => MapPickerPage(
+                                initialLatitude: latitude,
+                                initialLongitude: longitude,
+                                title: 'Choisir l\'adresse',
+                              ),
+                            ),
+                          );
+                          if (result != null) {
+                            setSheetState(() {
+                              latitude = result['latitude'];
+                              longitude = result['longitude'];
+                              addressController.text = result['address'];
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Map button
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final result = await Navigator.push<Map<String, dynamic>>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => MapPickerPage(
+                            initialLatitude: latitude,
+                            initialLongitude: longitude,
+                            title: 'Choisir sur la carte',
+                          ),
+                        ),
+                      );
+                      if (result != null) {
+                        setSheetState(() {
+                          latitude = result['latitude'];
+                          longitude = result['longitude'];
+                          addressController.text = result['address'];
+                        });
+                      }
+                    },
+                    icon: const Icon(Icons.map),
+                    label: const Text('Sélectionner sur la carte'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 48),
                     ),
                   ),
                   const SizedBox(height: 16),

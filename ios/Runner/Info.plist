@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Ouaga Chap Client</string>
+	<string>OUAGA CHAP</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>ouaga_chap_client</string>
+	<string>OUAGA CHAP</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -45,5 +45,12 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Location permissions -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>OUAGA CHAP a besoin de votre position pour afficher votre emplacement sur la carte et calculer les distances de livraison.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>OUAGA CHAP utilise votre position pour le suivi des livraisons en temps réel.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>OUAGA CHAP utilise votre position pour afficher votre emplacement et suivre vos livraisons.</string>
 </dict>
 </plist>

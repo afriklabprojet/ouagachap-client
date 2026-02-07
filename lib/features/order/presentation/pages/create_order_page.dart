@@ -12,6 +12,7 @@ import '../../../address/domain/entities/saved_address.dart';
 import '../../../address/presentation/bloc/address_bloc.dart';
 import '../../../address/presentation/bloc/address_event.dart';
 import '../../../address/presentation/bloc/address_state.dart';
+import '../../../address/presentation/pages/map_picker_page.dart';
 import '../bloc/order_bloc.dart';
 import '../bloc/order_event.dart';
 import '../bloc/order_state.dart';
@@ -312,12 +313,29 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
             delay: const Duration(milliseconds: 200),
             child: TextFormField(
               controller: _pickupAddressController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Adresse de récupération *',
                 hintText: 'Ex: Quartier Patte d\'oie, Secteur 15',
-                prefixIcon: Icon(Icons.location_on_outlined),
+                prefixIcon: const Icon(Icons.location_on_outlined),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.map_outlined, color: AppColors.primary),
+                  tooltip: 'Choisir sur la carte',
+                  onPressed: () => _openMapPicker(isPickup: true),
+                ),
               ),
               maxLines: 2,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SlideInWidget(
+            delay: const Duration(milliseconds: 220),
+            child: OutlinedButton.icon(
+              onPressed: () => _openMapPicker(isPickup: true),
+              icon: const Icon(Icons.map),
+              label: const Text('Sélectionner sur la carte'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 44),
+              ),
             ),
           ),
           const SizedBox(height: 20),
@@ -405,12 +423,26 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
           const SizedBox(height: 24),
           TextFormField(
             controller: _deliveryAddressController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Adresse de livraison *',
               hintText: 'Ex: Avenue Kwame Nkrumah, Ouaga 2000',
-              prefixIcon: Icon(Icons.location_on),
+              prefixIcon: const Icon(Icons.location_on),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.map_outlined, color: AppColors.primary),
+                tooltip: 'Choisir sur la carte',
+                onPressed: () => _openMapPicker(isPickup: false),
+              ),
             ),
             maxLines: 2,
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => _openMapPicker(isPickup: false),
+            icon: const Icon(Icons.map),
+            label: const Text('Sélectionner sur la carte'),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 44),
+            ),
           ),
           const SizedBox(height: 20),
           const Divider(),
@@ -953,5 +985,46 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _openMapPicker({required bool isPickup}) async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapPickerPage(
+          initialLatitude: isPickup ? _pickupLatitude : _deliveryLatitude,
+          initialLongitude: isPickup ? _pickupLongitude : _deliveryLongitude,
+          title: isPickup
+              ? 'Adresse de récupération'
+              : 'Adresse de livraison',
+        ),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        if (isPickup) {
+          _pickupLatitude = result['latitude'];
+          _pickupLongitude = result['longitude'];
+          _pickupAddressController.text = result['address'];
+        } else {
+          _deliveryLatitude = result['latitude'];
+          _deliveryLongitude = result['longitude'];
+          _deliveryAddressController.text = result['address'];
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isPickup
+                ? 'Adresse de récupération sélectionnée'
+                : 'Adresse de livraison sélectionnée',
+          ),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.success,
+        ),
+      );
+    }
   }
 }

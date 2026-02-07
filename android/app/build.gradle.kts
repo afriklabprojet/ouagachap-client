@@ -8,6 +8,15 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Load local properties for API keys
+val localProperties = java.util.Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.reader(Charsets.UTF_8).use { reader ->
+        localProperties.load(reader)
+    }
+}
+
 android {
     namespace = "bf.ouagachap.ouaga_chap_client"
     compileSdk = flutter.compileSdkVersion
@@ -34,6 +43,9 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
+        
+        // Google Maps API Key
+        manifestPlaceholders["MAPS_API_KEY"] = localProperties.getProperty("MAPS_API_KEY", "")
     }
 
     buildTypes {
