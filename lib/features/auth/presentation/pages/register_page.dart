@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/animations.dart';
+import '../../../../core/widgets/custom_buttons.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -105,19 +107,25 @@ class _RegisterPageState extends State<RegisterPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Title
-                  const Text(
-                    'Créer un compte',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
+                  SlideInWidget(
+                    beginOffset: const Offset(0, 0.3),
+                    child: const Text(
+                      'Créer un compte',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    'Remplissez vos informations pour vous inscrire',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
+                  FadeInWidget(
+                    delay: const Duration(milliseconds: 100),
+                    child: Text(
+                      'Remplissez vos informations pour vous inscrire',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -226,20 +234,12 @@ class _RegisterPageState extends State<RegisterPage> {
                   BlocBuilder<AuthBloc, AuthState>(
                     builder: (context, state) {
                       final isLoading = state is AuthLoading;
-                      return SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: isLoading ? null : _onRegister,
-                          child: isLoading
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Text('S\'inscrire'),
+                      return ScaleInWidget(
+                        delay: const Duration(milliseconds: 200),
+                        child: PrimaryButton(
+                          text: 'S\'inscrire',
+                          isLoading: isLoading,
+                          onPressed: _onRegister,
                         ),
                       );
                     },

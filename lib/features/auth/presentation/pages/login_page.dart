@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/animations.dart';
+import '../../../../core/widgets/custom_buttons.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -90,28 +92,34 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   const SizedBox(height: 40),
                   // Logo
-                  Center(
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryLight,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Icon(
-                        Icons.delivery_dining,
-                        size: 50,
-                        color: AppColors.primary,
+                  FadeInWidget(
+                    duration: const Duration(milliseconds: 600),
+                    child: Center(
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryLight,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Icon(
+                          Icons.delivery_dining,
+                          size: 50,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 40),
                   // Title
-                  const Text(
-                    'Connexion',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
+                  SlideInWidget(
+                    beginOffset: const Offset(0, 0.3),
+                    child: const Text(
+                      'Connexion',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -178,20 +186,12 @@ class _LoginPageState extends State<LoginPage> {
                   BlocBuilder<AuthBloc, AuthState>(
                     builder: (context, state) {
                       final isLoading = state is AuthLoading;
-                      return SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: isLoading ? null : _onLogin,
-                          child: isLoading
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Text('Continuer'),
+                      return ScaleInWidget(
+                        delay: const Duration(milliseconds: 200),
+                        child: PrimaryButton(
+                          text: 'Continuer',
+                          isLoading: isLoading,
+                          onPressed: _onLogin,
                         ),
                       );
                     },
