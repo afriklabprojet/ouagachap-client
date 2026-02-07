@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../di/injection.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
@@ -10,7 +12,6 @@ import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/order/presentation/pages/create_order_page.dart';
 import '../../features/order/presentation/pages/order_details_page.dart';
 import '../../features/order/presentation/pages/order_tracking_page.dart';
-import '../../features/order/presentation/pages/live_tracking_page.dart';
 import '../../features/order/presentation/pages/orders_history_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/edit_profile_page.dart';
@@ -22,6 +23,8 @@ import '../../features/wallet/presentation/pages/jeko_transaction_history_page.d
 import '../../features/promo/presentation/pages/promotions_page.dart';
 import '../../features/incoming/presentation/pages/incoming_orders_page.dart';
 import '../../features/address/presentation/pages/addresses_page.dart';
+import '../../features/tracking/presentation/bloc/live_tracking_bloc.dart';
+import '../../features/tracking/presentation/pages/live_tracking_page.dart';
 
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -134,8 +137,28 @@ class AppRouter {
         path: '${Routes.liveTracking}/:orderId',
         name: Routes.liveTracking,
         builder: (context, state) {
-          final orderId = state.pathParameters['orderId']!;
-          return LiveTrackingPage(orderId: orderId);
+          final orderId = int.parse(state.pathParameters['orderId']!);
+          final trackingCode = state.uri.queryParameters['tracking'] ?? '';
+          final courierName = state.uri.queryParameters['courierName'];
+          final courierPhone = state.uri.queryParameters['courierPhone'];
+          final pickupLat = double.tryParse(state.uri.queryParameters['pickupLat'] ?? '');
+          final pickupLng = double.tryParse(state.uri.queryParameters['pickupLng'] ?? '');
+          final deliveryLat = double.tryParse(state.uri.queryParameters['deliveryLat'] ?? '');
+          final deliveryLng = double.tryParse(state.uri.queryParameters['deliveryLng'] ?? '');
+          
+          return BlocProvider(
+            create: (_) => getIt<LiveTrackingBloc>(),
+            child: LiveTrackingPage(
+              orderId: orderId,
+              trackingCode: trackingCode,
+              courierName: courierName,
+              courierPhone: courierPhone,
+              pickupLatitude: pickupLat,
+              pickupLongitude: pickupLng,
+              deliveryLatitude: deliveryLat,
+              deliveryLongitude: deliveryLng,
+            ),
+          );
         },
       ),
       

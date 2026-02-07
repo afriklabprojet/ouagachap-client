@@ -205,6 +205,13 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
               child: _buildPriceCard(order),
             ),
             const SizedBox(height: 20),
+            // Live Tracking Button
+            if (order.canTrack)
+              FadeInWidget(
+                delay: const Duration(milliseconds: 550),
+                child: _buildLiveTrackingButton(order),
+              ),
+            if (order.canTrack) const SizedBox(height: 12),
             // Actions
             if (order.canCancel) 
               FadeInWidget(
@@ -588,6 +595,29 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
           padding: const EdgeInsets.symmetric(vertical: 16),
         ),
       ),
+    );
+  }
+
+  Widget _buildLiveTrackingButton(Order order) {
+    if (!order.canTrack) return const SizedBox.shrink();
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () => _navigateToLiveTracking(order),
+        icon: const Icon(Icons.location_on),
+        label: const Text('Suivre en direct'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.success,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToLiveTracking(Order order) {
+    context.push(
+      '${Routes.liveTracking}/${order.id}?tracking=${order.trackingNumber}',
     );
   }
 

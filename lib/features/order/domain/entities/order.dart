@@ -87,6 +87,11 @@ class Order extends Equatable {
 
   bool get canRate => status == OrderStatus.delivered && courierRating == null;
 
+  /// Peut suivre en temps réel : coursier assigné et commande en cours
+  bool get canTrack => 
+      courier != null && 
+      (status == OrderStatus.pickingUp || status == OrderStatus.inTransit);
+
   bool get hasRatedCourier => courierRating != null;
 
   String get statusLabel {

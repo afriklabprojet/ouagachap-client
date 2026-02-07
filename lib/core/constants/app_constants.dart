@@ -19,6 +19,17 @@ class AppConstants {
     return 'https://api.ouagachap.bf/api/v1';
   }
   
+  /// URL WebSocket pour le suivi en temps réel (Laravel Reverb)
+  static String get wsBaseUrl {
+    if (kDebugMode) {
+      return 'http://127.0.0.1:8080';
+    }
+    return 'https://ws.ouagachap.bf';
+  }
+  
+  /// Clé d'application WebSocket (Laravel Reverb/Pusher)
+  static const String wsAppKey = 'ouagachap-app-key';
+  
   /// Timeouts en millisecondes
   static const int connectTimeout = 30000;
   static const int receiveTimeout = 30000;

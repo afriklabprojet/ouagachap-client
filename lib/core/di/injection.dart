@@ -7,6 +7,7 @@ import '../network/api_client.dart';
 import '../network/api_interceptor.dart';
 import '../services/cache_service.dart';
 import '../services/theme_service.dart';
+import '../services/websocket_service.dart';
 import '../../features/auth/data/datasources/auth_local_datasource.dart';
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
@@ -47,6 +48,7 @@ import '../../features/wallet/data/repositories/jeko_payment_repository.dart';
 import '../../features/wallet/presentation/bloc/jeko_payment_bloc.dart';
 import '../../features/address/data/repositories/address_repository.dart';
 import '../../features/address/presentation/bloc/address_bloc.dart';
+import '../../features/tracking/presentation/bloc/live_tracking_bloc.dart';
 
 final getIt = GetIt.instance;
 
@@ -61,6 +63,14 @@ Future<void> configureDependencies() async {
   );
   getIt.registerSingleton<CacheService>(
     CacheService(sharedPreferences),
+  );
+  
+  // WebSocket Service for real-time tracking
+  getIt.registerLazySingleton<WebSocketService>(
+    () => WebSocketService(
+      baseUrl: AppConstants.wsBaseUrl,
+      appKey: AppConstants.wsAppKey,
+    ),
   );
   
   // Dio & API Client
@@ -187,6 +197,9 @@ Future<void> configureDependencies() async {
   );
   getIt.registerFactory<AddressBloc>(
     () => AddressBloc(getIt<AddressRepository>()),
+  );
+  getIt.registerFactory<LiveTrackingBloc>(
+    () => LiveTrackingBloc(webSocketService: getIt<WebSocketService>()),
   );
 }
 
