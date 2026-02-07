@@ -8,6 +8,9 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/animations.dart';
+import '../../../../core/widgets/custom_buttons.dart';
+import '../../../../core/widgets/form_fields.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -347,20 +350,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   ),
                   const SizedBox(height: 40),
                   // Save button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _onSave,
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text('Enregistrer'),
+                  ScaleInWidget(
+                    delay: const Duration(milliseconds: 200),
+                    child: PrimaryButton(
+                      text: 'Enregistrer',
+                      isLoading: _isLoading,
+                      onPressed: _onSave,
+                      icon: Icons.check,
                     ),
                   ),
                 ],
