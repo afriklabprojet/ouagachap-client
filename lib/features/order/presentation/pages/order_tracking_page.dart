@@ -7,6 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/animations.dart';
+import '../../../../core/widgets/cards.dart';
 import '../../domain/entities/order.dart';
 import '../bloc/order_bloc.dart';
 import '../bloc/order_event.dart';
@@ -341,56 +343,16 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
           const SizedBox(height: 16),
           // Courier info
           if (order.courier != null)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.secondary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.person,
-                      color: AppColors.secondary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          order.courier!.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        if (order.courier!.vehicleType != null)
-                          Text(
-                            order.courier!.vehicleType!,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => _callCourier(order.courier!.phone),
-                    icon: const Icon(Icons.phone),
-                    style: IconButton.styleFrom(
-                      backgroundColor: AppColors.secondary,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
+            SlideInWidget(
+              beginOffset: const Offset(0, 0.3),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: CourierCard(
+                  name: order.courier!.name,
+                  vehicleInfo: order.courier!.vehicleType,
+                  rating: order.courier!.rating?.toDouble(),
+                  onCall: () => _callCourier(order.courier!.phone),
+                ),
               ),
             ),
           const SizedBox(height: 16),

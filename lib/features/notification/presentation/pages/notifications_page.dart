@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/widgets.dart';
+import '../../../../core/widgets/animations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/notification_bloc.dart';
@@ -57,48 +58,72 @@ class _NotificationsPageState extends State<NotificationsPage> {
               );
             }
             
-            return ListView.separated(
-              itemCount: state.notifications.length,
-              separatorBuilder: (context, index) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final notification = state.notifications[index];
-                return ListTile(
-                  tileColor: notification.isRead ? Colors.transparent : AppColors.primaryLight.withOpacity(0.1),
-                  leading: CircleAvatar(
-                    backgroundColor: _getIconColor(notification.type),
-                    child: Icon(_getIcon(notification.type), color: Colors.white, size: 20),
-                  ),
-                  title: Text(
-                    notification.title,
-                    style: TextStyle(
-                      fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold,
-                    ),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(notification.body),
-                      const SizedBox(height: 4),
-                      Text(
-                        _formatDate(notification.createdAt),
-                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                      ),
-                    ],
-                  ),
-                  onTap: () {
-                    if (!notification.isRead) {
-                      context.read<NotificationBloc>().add(MarkAsRead(notification.id));
-                    }
-                    // Navigate if needed based on type
-                  },
-                );
+            return RefreshIndicator(
+              onRefresh: () async {
+                context.read<NotificationBloc>().add(const LoadNotifications(refresh: true));
               },
+              child: ListView.separated(
+                itemCount: state.notifications.length,
+                separatorBuilder: (context, index) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final notification = state.notifications[index];
+                  return SlideInWidget(
+                    delay: Duration(milliseconds: 50 * index),
+                    beginOffset: const Offset(0.2, 0),
+                    child: _buildNotificationTile(notification),
+                  );
+                },
+              ),
             );
           }
           
           return const SizedBox.shrink();
         },
       ),
+    );
+  }
+
+  Widget _buildNotificationTile(notification) {
+    return ListTile(
+      tileColor: notification.isRead ? Colors.transparent : AppColors.primaryLight.withAlpha(25),
+      leading: ScaleInWidget(
+        child: CircleAvatar(
+          backgroundColor: _getIconColor(notification.type),
+          child: Icon(_getIcon(notification.type), color: Colors.white, size: 20),
+        ),
+      ),
+      title: Text(
+        notification.title,
+        style: TextStyle(
+          fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold,
+        ),
+      ),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(notification.body),
+          const SizedBox(height: 4),
+          Text(
+            _formatDate(notification.createdAt),
+            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+          ),
+        ],
+      ),
+      trailing: notification.isRead 
+          ? null 
+          : Container(
+              width: 10,
+              height: 10,
+              decoration: const BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+              ),
+            ),
+      onTap: () {
+        if (!notification.isRead) {
+          context.read<NotificationBloc>().add(MarkAsRead(notification.id));
+        }
+      },
     );
   }
 

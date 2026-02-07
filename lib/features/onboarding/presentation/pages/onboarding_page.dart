@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/animations.dart';
+import '../../../../core/widgets/custom_buttons.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -167,26 +169,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
             // Buttons
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
+              child: ScaleInWidget(
+                child: PrimaryButton(
+                  text: _currentPage == _items.length - 1 ? 'Commencer' : 'Suivant',
                   onPressed: _nextPage,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    _currentPage == _items.length - 1 ? 'Commencer' : 'Suivant',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  icon: _currentPage == _items.length - 1 
+                      ? Icons.rocket_launch 
+                      : Icons.arrow_forward,
                 ),
               ),
             ),
@@ -203,53 +192,61 @@ class _OnboardingPageState extends State<OnboardingPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // Icon with gradient background
-          Container(
-            width: 180,
-            height: 180,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: item.gradient,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(40),
-              boxShadow: [
-                BoxShadow(
-                  color: item.gradient.first.withOpacity(0.4),
-                  blurRadius: 30,
-                  offset: const Offset(0, 15),
+          ScaleInWidget(
+            child: Container(
+              width: 180,
+              height: 180,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: item.gradient,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-              ],
-            ),
-            child: Icon(
-              item.icon,
-              size: 80,
-              color: Colors.white,
+                borderRadius: BorderRadius.circular(40),
+                boxShadow: [
+                  BoxShadow(
+                    color: item.gradient.first.withAlpha(100),
+                    blurRadius: 30,
+                    offset: const Offset(0, 15),
+                  ),
+                ],
+              ),
+              child: Icon(
+                item.icon,
+                size: 80,
+                color: Colors.white,
+              ),
             ),
           ),
           const SizedBox(height: 48),
           
           // Title
-          Text(
-            item.title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-              height: 1.2,
+          SlideInWidget(
+            beginOffset: const Offset(0, 0.3),
+            child: Text(
+              item.title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+                height: 1.2,
+              ),
             ),
           ),
           const SizedBox(height: 16),
           
           // Description
-          Text(
-            item.description,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.textSecondary,
-              height: 1.5,
+          FadeInWidget(
+            delay: const Duration(milliseconds: 200),
+            child: Text(
+              item.description,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
             ),
           ),
         ],
