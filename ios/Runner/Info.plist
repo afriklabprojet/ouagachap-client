@@ -52,5 +52,28 @@
 	<string>OUAGA CHAP utilise votre position pour le suivi des livraisons en temps réel.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>OUAGA CHAP utilise votre position pour afficher votre emplacement et suivre vos livraisons.</string>
+	<!-- Google Maps API Key -->
+	<key>GOOGLE_MAPS_API_KEY</key>
+	<string>AIzaSyDtkPE0r8OdZePsCgpzUVvMTgC8BzpigSQ</string>
+	<!-- Deep Links - Custom URL Scheme -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>bf.ouagachap.client</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>ouagachap</string>
+			</array>
+		</dict>
+	</array>
+	<!-- Universal Links -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:ouagachap.bf</string>
+		<string>applinks:www.ouagachap.bf</string>
+	</array>
 </dict>
 </plist>

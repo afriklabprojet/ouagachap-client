@@ -6,7 +6,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/di/injection.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../core/services/image_compression_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/animations.dart';
 import '../../../../core/widgets/custom_buttons.dart';
@@ -58,15 +60,25 @@ class _EditProfilePageState extends State<EditProfilePage> {
     try {
       final XFile? pickedFile = await _imagePicker.pickImage(
         source: source,
-        maxWidth: 512,
-        maxHeight: 512,
-        imageQuality: 80,
+        maxWidth: 1024,
+        maxHeight: 1024,
       );
       
       if (pickedFile != null) {
-        final bytes = await pickedFile.readAsBytes();
+        // Compresser l'image avec notre service
+        final compressionService = getIt<ImageCompressionService>();
+        final compressedPath = await compressionService.compressImageFile(
+          pickedFile.path,
+          quality: 80,
+          minWidth: 512,
+          minHeight: 512,
+        );
+        
+        final compressedFile = XFile(compressedPath ?? pickedFile.path);
+        final bytes = await compressedFile.readAsBytes();
+        
         setState(() {
-          _selectedImage = pickedFile;
+          _selectedImage = compressedFile;
           _selectedImageBytes = bytes;
         });
       }

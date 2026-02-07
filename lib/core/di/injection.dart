@@ -8,6 +8,10 @@ import '../network/api_interceptor.dart';
 import '../services/cache_service.dart';
 import '../services/theme_service.dart';
 import '../services/websocket_service.dart';
+import '../services/image_compression_service.dart';
+import '../services/deep_link_service.dart';
+import '../services/app_review_service.dart';
+import '../services/changelog_service.dart';
 import '../../features/auth/data/datasources/auth_local_datasource.dart';
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
@@ -63,6 +67,26 @@ Future<void> configureDependencies() async {
   );
   getIt.registerSingleton<CacheService>(
     CacheService(sharedPreferences),
+  );
+  
+  // Image Compression Service
+  getIt.registerLazySingleton<ImageCompressionService>(
+    () => ImageCompressionService(),
+  );
+  
+  // Deep Link Service
+  final deepLinkService = DeepLinkService();
+  await deepLinkService.initialize();
+  getIt.registerSingleton<DeepLinkService>(deepLinkService);
+  
+  // App Review Service
+  getIt.registerSingleton<AppReviewService>(
+    AppReviewService(sharedPreferences),
+  );
+  
+  // Changelog Service
+  getIt.registerSingleton<ChangelogService>(
+    ChangelogService(sharedPreferences),
   );
   
   // WebSocket Service for real-time tracking

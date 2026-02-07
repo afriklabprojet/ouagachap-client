@@ -3,7 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/di/injection.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../core/services/app_review_service.dart';
+import '../../../../core/services/deep_link_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/animations.dart';
 import '../../../../core/widgets/custom_buttons.dart';
@@ -40,6 +43,20 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     }
+  }
+
+  Future<void> _requestAppReviewIfEligible() async {
+    final reviewService = getIt<AppReviewService>();
+    await reviewService.recordSuccessfulDelivery();
+    await reviewService.requestReviewIfEligible();
+  }
+
+  Future<void> _shareOrder(Order order) async {
+    final deepLinkService = getIt<DeepLinkService>();
+    await deepLinkService.shareOrder(
+      orderId: order.id,
+      trackingCode: order.trackingNumber,
+    );
   }
 
   void _showCancelDialog(Order order) {
@@ -110,6 +127,8 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
               backgroundColor: AppColors.success,
             ),
           );
+          // Record successful delivery and request review if eligible
+          _requestAppReviewIfEligible();
         } else if (state is OrderError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -160,6 +179,11 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
           onPressed: () => context.go(Routes.ordersHistory),
         ),
         actions: [
+          // Share button
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: () => _shareOrder(order),
+          ),
           if (order.isActive)
             IconButton(
               icon: const Icon(Icons.map),

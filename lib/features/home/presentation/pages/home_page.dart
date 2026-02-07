@@ -4,7 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/di/injection.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../core/services/changelog_service.dart';
+import '../../../../core/services/deep_link_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/animations.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
@@ -59,6 +62,54 @@ class _HomePageState extends State<HomePage> {
     context.read<OrderBloc>().add(const GetOrdersRequested(refresh: true));
     context.read<NotificationBloc>().add(const LoadNotifications());
     _startPromoAutoScroll();
+    _checkChangelogAndDeepLinks();
+  }
+
+  Future<void> _checkChangelogAndDeepLinks() async {
+    // Attendre que le build soit terminé
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+
+    // Vérifier et afficher le changelog si nouvelle version
+    final changelogService = getIt<ChangelogService>();
+    if (changelogService.shouldShowChangelog()) {
+      await changelogService.showChangelogDialog(context);
+    }
+
+    // Écouter les deep links
+    final deepLinkService = getIt<DeepLinkService>();
+    deepLinkService.onDeepLink.listen(_handleDeepLink);
+  }
+
+  void _handleDeepLink(DeepLinkData data) {
+    if (!mounted) return;
+    
+    switch (data.type) {
+      case DeepLinkType.order:
+        context.push('${Routes.orderDetails}/${data.id}');
+        break;
+      case DeepLinkType.tracking:
+        context.push('${Routes.orderTracking}/${data.id}');
+        break;
+      case DeepLinkType.promo:
+        // Afficher un snackbar avec le code promo
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Code promo ${data.id} appliqué !'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        break;
+      case DeepLinkType.referral:
+        // Traiter le parrainage
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Parrainage ${data.id} validé !'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        break;
+    }
   }
 
   @override
