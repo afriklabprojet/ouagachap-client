@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/repositories/address_repository.dart';
+import '../../domain/entities/saved_address.dart';
 import 'address_event.dart';
 import 'address_state.dart';
 

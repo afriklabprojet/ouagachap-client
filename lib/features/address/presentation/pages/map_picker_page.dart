@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
-import '../../../core/services/geocoding_service.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../../core/services/geocoding_service.dart';
+import '../../../../core/theme/app_colors.dart';
 
 /// Page de sélection d'adresse sur carte
 class MapPickerPage extends StatefulWidget {
