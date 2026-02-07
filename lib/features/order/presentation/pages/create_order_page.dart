@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/animations.dart';
 import '../../../../core/widgets/lottie_animations.dart';
 import '../bloc/order_bloc.dart';
 import '../bloc/order_event.dart';
@@ -273,61 +274,79 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Adresse de récupération',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          FadeInWidget(
+            delay: const Duration(milliseconds: 100),
+            child: const Text(
+              'Adresse de récupération',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
           ),
           const SizedBox(height: 8),
-          Text(
-            'Où devons-nous récupérer votre colis ?',
-            style: TextStyle(color: Colors.grey[600]),
+          FadeInWidget(
+            delay: const Duration(milliseconds: 150),
+            child: Text(
+              'Où devons-nous récupérer votre colis ?',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
           ),
           const SizedBox(height: 24),
-          TextFormField(
-            controller: _pickupAddressController,
-            decoration: const InputDecoration(
-              labelText: 'Adresse de récupération *',
-              hintText: 'Ex: Quartier Patte d\'oie, Secteur 15',
-              prefixIcon: Icon(Icons.location_on_outlined),
+          SlideInWidget(
+            delay: const Duration(milliseconds: 200),
+            child: TextFormField(
+              controller: _pickupAddressController,
+              decoration: const InputDecoration(
+                labelText: 'Adresse de récupération *',
+                hintText: 'Ex: Quartier Patte d\'oie, Secteur 15',
+                prefixIcon: Icon(Icons.location_on_outlined),
+              ),
+              maxLines: 2,
             ),
-            maxLines: 2,
           ),
           const SizedBox(height: 20),
           const Divider(),
           const SizedBox(height: 16),
-          Text(
-            'Contact sur place (optionnel)',
-            style: TextStyle(
-              color: Colors.grey[700],
-              fontWeight: FontWeight.w500,
+          FadeInWidget(
+            delay: const Duration(milliseconds: 250),
+            child: Text(
+              'Contact sur place (optionnel)',
+              style: TextStyle(
+                color: Colors.grey[700],
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
           const SizedBox(height: 16),
-          TextFormField(
-            controller: _pickupContactNameController,
-            decoration: const InputDecoration(
-              labelText: 'Nom du contact',
-              prefixIcon: Icon(Icons.person_outline),
+          SlideInWidget(
+            delay: const Duration(milliseconds: 300),
+            child: TextFormField(
+              controller: _pickupContactNameController,
+              decoration: const InputDecoration(
+                labelText: 'Nom du contact',
+                prefixIcon: Icon(Icons.person_outline),
+              ),
             ),
           ),
           const SizedBox(height: 16),
-          TextFormField(
-            controller: _pickupContactPhoneController,
-            keyboardType: TextInputType.phone,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(8),
-            ],
-            decoration: InputDecoration(
-              labelText: 'Téléphone du contact',
-              hintText: '70 00 00 00',
-              prefixIcon: Container(
-                padding: const EdgeInsets.only(left: 12, right: 8),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('+226', style: TextStyle(color: Colors.grey[600])),
-                  ],
+          SlideInWidget(
+            delay: const Duration(milliseconds: 350),
+            child: TextFormField(
+              controller: _pickupContactPhoneController,
+              keyboardType: TextInputType.phone,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(8),
+              ],
+              decoration: InputDecoration(
+                labelText: 'Téléphone du contact',
+                hintText: '70 00 00 00',
+                prefixIcon: Container(
+                  padding: const EdgeInsets.only(left: 12, right: 8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('+226', style: TextStyle(color: Colors.grey[600])),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -481,46 +500,60 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Confirmation',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          FadeInWidget(
+            delay: const Duration(milliseconds: 100),
+            child: const Text(
+              'Confirmation',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
           ),
           const SizedBox(height: 8),
-          Text(
-            'Vérifiez les informations de votre commande',
-            style: TextStyle(color: Colors.grey[600]),
+          FadeInWidget(
+            delay: const Duration(milliseconds: 150),
+            child: Text(
+              'Vérifiez les informations de votre commande',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
           ),
           const SizedBox(height: 24),
           // Pickup summary
-          _buildSummaryCard(
-            title: 'Récupération',
-            icon: Icons.location_on_outlined,
-            iconColor: AppColors.primary,
-            items: [
-              _pickupAddressController.text,
+          SlideInWidget(
+            delay: const Duration(milliseconds: 200),
+            child: _buildSummaryCard(
+              title: 'Récupération',
+              icon: Icons.location_on_outlined,
+              iconColor: AppColors.primary,
+              items: [
+                _pickupAddressController.text,
               if (_pickupContactNameController.text.isNotEmpty)
                 'Contact: ${_pickupContactNameController.text}',
               if (_pickupContactPhoneController.text.isNotEmpty)
                 'Tél: +226 ${_pickupContactPhoneController.text}',
             ],
+            ),
           ),
           const SizedBox(height: 16),
           // Delivery summary
-          _buildSummaryCard(
-            title: 'Livraison',
-            icon: Icons.location_on,
-            iconColor: AppColors.secondary,
-            items: [
-              _deliveryAddressController.text,
-              'Destinataire: ${_recipientNameController.text}',
-              'Tél: +226 ${_recipientPhoneController.text}',
-              if (_packageDescriptionController.text.isNotEmpty)
-                'Colis: ${_packageDescriptionController.text}',
-            ],
+          SlideInWidget(
+            delay: const Duration(milliseconds: 300),
+            child: _buildSummaryCard(
+              title: 'Livraison',
+              icon: Icons.location_on,
+              iconColor: AppColors.secondary,
+              items: [
+                _deliveryAddressController.text,
+                'Destinataire: ${_recipientNameController.text}',
+                'Tél: +226 ${_recipientPhoneController.text}',
+                if (_packageDescriptionController.text.isNotEmpty)
+                  'Colis: ${_packageDescriptionController.text}',
+              ],
+            ),
           ),
           const SizedBox(height: 24),
           // Price summary
-          Container(
+          ScaleInWidget(
+            delay: const Duration(milliseconds: 400),
+            child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: AppColors.primaryLight,
@@ -557,6 +590,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                 ),
               ],
             ),
+          ),
           ),
         ],
       ),

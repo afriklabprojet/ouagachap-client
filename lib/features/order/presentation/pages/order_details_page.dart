@@ -174,24 +174,43 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Status card
-            _buildStatusCard(order),
+            FadeInWidget(
+              delay: const Duration(milliseconds: 100),
+              child: _buildStatusCard(order),
+            ),
             const SizedBox(height: 20),
             // Timeline
-            _buildTimeline(order),
+            SlideInWidget(
+              delay: const Duration(milliseconds: 200),
+              child: _buildTimeline(order),
+            ),
             const SizedBox(height: 20),
             // Addresses
-            _buildAddressCard(order),
+            SlideInWidget(
+              delay: const Duration(milliseconds: 300),
+              child: _buildAddressCard(order),
+            ),
             const SizedBox(height: 20),
             // Courier info
             if (order.courier != null) ...[
-              _buildCourierCard(order.courier!),
+              ScaleInWidget(
+                delay: const Duration(milliseconds: 400),
+                child: _buildCourierCard(order.courier!),
+              ),
               const SizedBox(height: 20),
             ],
             // Price
-            _buildPriceCard(order),
+            FadeInWidget(
+              delay: const Duration(milliseconds: 500),
+              child: _buildPriceCard(order),
+            ),
             const SizedBox(height: 20),
             // Actions
-            if (order.canCancel) _buildCancelButton(order),
+            if (order.canCancel) 
+              FadeInWidget(
+                delay: const Duration(milliseconds: 600),
+                child: _buildCancelButton(order),
+              ),
           ],
         ),
       ),

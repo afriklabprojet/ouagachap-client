@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/animations.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../notification/presentation/bloc/notification_bloc.dart';
@@ -94,14 +95,20 @@ class _HomePageState extends State<HomePage> {
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
                 sliver: SliverToBoxAdapter(
-                  child: _buildHeader(),
+                  child: FadeInWidget(
+                    delay: const Duration(milliseconds: 100),
+                    child: _buildHeader(),
+                  ),
                 ),
               ),
               
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 sliver: SliverToBoxAdapter(
-                  child: _buildWelcomeBanner(),
+                  child: SlideInWidget(
+                    delay: const Duration(milliseconds: 200),
+                    child: _buildWelcomeBanner(),
+                  ),
                 ),
               ),
               
@@ -113,35 +120,41 @@ class _HomePageState extends State<HomePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Services',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              '6 actifs',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                      FadeInWidget(
+                        delay: const Duration(milliseconds: 300),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Services',
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
                               ),
                             ),
-                          ),
-                        ],
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '6 actifs',
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 16),
-                      _buildServicesGrid(),
+                      ScaleInWidget(
+                        delay: const Duration(milliseconds: 400),
+                        child: _buildServicesGrid(),
+                      ),
                     ],
                   ),
                 ),
@@ -151,13 +164,19 @@ class _HomePageState extends State<HomePage> {
               
               // Section Promotions
               SliverToBoxAdapter(
-                child: _buildPromotionsSection(),
+                child: FadeInWidget(
+                  delay: const Duration(milliseconds: 500),
+                  child: _buildPromotionsSection(),
+                ),
               ),
               
               const SliverToBoxAdapter(child: SizedBox(height: 28)),
               
               SliverToBoxAdapter(
-                child: _buildActiveOrders(),
+                child: SlideInWidget(
+                  delay: const Duration(milliseconds: 600),
+                  child: _buildActiveOrders(),
+                ),
               ),
               
               const SliverToBoxAdapter(child: SizedBox(height: 100)),

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/animations.dart';
 import '../../../../core/widgets/lottie_animations.dart';
 import '../../../../core/widgets/skeleton_loaders.dart';
 import '../../data/datasources/jeko_payment_datasource.dart';
@@ -93,7 +94,10 @@ class _JekoTransactionHistoryPageState
                     ),
                   );
                 }
-                return _buildTransactionCard(state.transactionHistory[index]);
+                return SlideInWidget(
+                  delay: Duration(milliseconds: 50 * (index % 10)),
+                  child: _buildTransactionCard(state.transactionHistory[index]),
+                );
               },
             ),
           );
