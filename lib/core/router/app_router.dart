@@ -21,6 +21,7 @@ import '../../features/wallet/presentation/pages/jeko_recharge_page.dart';
 import '../../features/wallet/presentation/pages/jeko_transaction_history_page.dart';
 import '../../features/promo/presentation/pages/promotions_page.dart';
 import '../../features/incoming/presentation/pages/incoming_orders_page.dart';
+import '../../features/address/presentation/pages/addresses_page.dart';
 
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -160,6 +161,12 @@ class AppRouter {
             name: Routes.support,
             builder: (context, state) => const SupportPage(),
           ),
+          // Adresses sauvegardées
+          GoRoute(
+            path: 'addresses',
+            name: Routes.addresses,
+            builder: (context, state) => const AddressesPage(),
+          ),
         ],
       ),
       
@@ -213,6 +220,7 @@ abstract class Routes {
   static const String editProfile = 'edit';
   static const String notifications = 'notifications';
   static const String support = 'support';
+  static const String addresses = 'addresses';
   static const String incomingOrders = '/incoming-orders';
   static const String jekoRecharge = 'jeko-recharge';
   static const String jekoHistory = 'jeko-history';

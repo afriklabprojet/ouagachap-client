@@ -117,6 +117,11 @@ class ProfilePage extends StatelessWidget {
                       onTap: () => context.go(Routes.ordersHistory),
                     ),
                     _buildMenuItem(
+                      icon: Icons.location_on_outlined,
+                      title: 'Mes adresses',
+                      onTap: () => context.go('${Routes.profile}/${Routes.addresses}'),
+                    ),
+                    _buildMenuItem(
                       icon: Icons.notifications_outlined,
                       title: 'Notifications',
                       onTap: () => context.go('${Routes.profile}/${Routes.notifications}'),

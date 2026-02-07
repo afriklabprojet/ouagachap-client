@@ -45,6 +45,8 @@ import '../../features/incoming/presentation/bloc/incoming_order_bloc.dart';
 import '../../features/wallet/data/datasources/jeko_payment_datasource.dart';
 import '../../features/wallet/data/repositories/jeko_payment_repository.dart';
 import '../../features/wallet/presentation/bloc/jeko_payment_bloc.dart';
+import '../../features/address/data/repositories/address_repository.dart';
+import '../../features/address/presentation/bloc/address_bloc.dart';
 
 final getIt = GetIt.instance;
 
@@ -122,6 +124,9 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton<JekoPaymentRepository>(
     () => JekoPaymentRepository(getIt<JekoPaymentRemoteDataSource>()),
   );
+  getIt.registerLazySingleton<AddressRepository>(
+    () => AddressRepository(getIt<ApiClient>()),
+  );
   
   // Use Cases - Auth
   getIt.registerLazySingleton(() => RegisterUseCase(getIt<AuthRepository>()));
@@ -179,6 +184,9 @@ Future<void> configureDependencies() async {
   );
   getIt.registerFactory<JekoPaymentBloc>(
     () => JekoPaymentBloc(getIt<JekoPaymentRepository>()),
+  );
+  getIt.registerFactory<AddressBloc>(
+    () => AddressBloc(getIt<AddressRepository>()),
   );
 }
 

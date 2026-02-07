@@ -3,10 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/di/injection.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/animations.dart';
 import '../../../../core/widgets/lottie_animations.dart';
+import '../../../address/domain/entities/saved_address.dart';
+import '../../../address/presentation/bloc/address_bloc.dart';
+import '../../../address/presentation/bloc/address_event.dart';
+import '../../../address/presentation/bloc/address_state.dart';
 import '../bloc/order_bloc.dart';
 import '../bloc/order_event.dart';
 import '../bloc/order_state.dart';
@@ -284,9 +289,22 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
           const SizedBox(height: 8),
           FadeInWidget(
             delay: const Duration(milliseconds: 150),
-            child: Text(
-              'Où devons-nous récupérer votre colis ?',
-              style: TextStyle(color: Colors.grey[600]),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Où devons-nous récupérer votre colis ?',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+                TextButton.icon(
+                  onPressed: () => _showAddressSelector(isPickup: true),
+                  icon: const Icon(Icons.bookmark_outline, size: 18),
+                  label: const Text('Mes adresses'),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 24),
@@ -367,9 +385,22 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          Text(
-            'Où devons-nous livrer votre colis ?',
-            style: TextStyle(color: Colors.grey[600]),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Où devons-nous livrer votre colis ?',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+              TextButton.icon(
+                onPressed: () => _showAddressSelector(isPickup: false),
+                icon: const Icon(Icons.bookmark_outline, size: 18),
+                label: const Text('Mes adresses'),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 24),
           TextFormField(
@@ -692,6 +723,234 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showAddressSelector({required bool isPickup}) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => BlocProvider(
+        create: (context) => getIt<AddressBloc>()..add(LoadAddresses()),
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          builder: (context, scrollController) => Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              children: [
+                // Handle bar
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                // Title
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        isPickup
+                            ? 'Sélectionner adresse de récupération'
+                            : 'Sélectionner adresse de livraison',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(),
+                // Address list
+                Expanded(
+                  child: BlocBuilder<AddressBloc, AddressState>(
+                    builder: (context, state) {
+                      if (state.status == AddressStatus.loading) {
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+
+                      if (state.addresses.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.location_off_outlined,
+                                size: 64,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Aucune adresse sauvegardée',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              TextButton.icon(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  context.go(
+                                      '${Routes.profile}/${Routes.addresses}');
+                                },
+                                icon: const Icon(Icons.add),
+                                label: const Text('Ajouter une adresse'),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      return ListView.separated(
+                        controller: scrollController,
+                        padding: const EdgeInsets.all(16),
+                        itemCount: state.addresses.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final address = state.addresses[index];
+                          return _buildAddressCard(address, isPickup);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddressCard(SavedAddress address, bool isPickup) {
+    IconData typeIcon;
+    switch (address.type) {
+      case AddressType.home:
+        typeIcon = Icons.home_outlined;
+        break;
+      case AddressType.work:
+        typeIcon = Icons.work_outline;
+        break;
+      case AddressType.other:
+        typeIcon = Icons.location_on_outlined;
+        break;
+    }
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            if (isPickup) {
+              _pickupAddressController.text = address.address;
+              _pickupLatitude = address.latitude;
+              _pickupLongitude = address.longitude;
+            } else {
+              _deliveryAddressController.text = address.address;
+              _deliveryLatitude = address.latitude;
+              _deliveryLongitude = address.longitude;
+            }
+          });
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Adresse "${address.label}" sélectionnée'),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: AppColors.success,
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(typeIcon, color: AppColors.primary),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          address.label,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                        if (address.isDefault) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'Par défaut',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      address.address,
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 13,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.grey),
+            ],
+          ),
+        ),
       ),
     );
   }
