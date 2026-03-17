@@ -96,15 +96,18 @@ class OuagaChapApp extends StatelessWidget {
           listenable: getIt<ThemeService>(),
           builder: (context, _) {
             final themeService = getIt<ThemeService>();
-            return NetworkStatusWidget(
-              child: MaterialApp.router(
-                title: 'OUAGA CHAP',
-                debugShowCheckedModeBanner: false,
-                theme: AppTheme.lightTheme,
-                darkTheme: AppTheme.darkTheme,
-                themeMode: themeService.themeMode,
-                routerConfig: AppRouter.router,
-              ),
+            return MaterialApp.router(
+              title: 'OUAGA CHAP',
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: themeService.themeMode,
+              routerConfig: AppRouter.router,
+              builder: (context, child) {
+                return NetworkStatusWidget(
+                  child: child ?? const SizedBox.shrink(),
+                );
+              },
             );
           },
         ),

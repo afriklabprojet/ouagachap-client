@@ -2,7 +2,7 @@ name: ouaga_chap_client
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -55,21 +55,21 @@ dependencies:
   web_socket_channel: ^3.0.1
   path: ^1.9.0
   path_provider: ^2.1.5
-  
+
   # Image compression
   flutter_image_compress: ^2.3.0
-  
+
   # App rating
   in_app_review: ^2.0.10
-  
+
   # Deep linking
   app_links: ^6.3.3
   share_plus: ^10.1.4
-  
+
   # Localizations
   flutter_localizations:
     sdk: flutter
-  
+
   # Firebase
   firebase_core: ^4.4.0
   firebase_messaging: ^16.1.1
@@ -91,10 +91,10 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   build_runner: ^2.10.5
   injectable_generator: ^2.12.0
-  
+
   # Test dependencies
   mocktail: ^1.0.4
-  
+
   # App icons generator
   flutter_launcher_icons: ^0.14.3
 
