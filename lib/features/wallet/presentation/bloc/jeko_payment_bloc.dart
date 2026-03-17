@@ -1,3 +1,4 @@
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/repositories/jeko_payment_repository.dart';
 import 'jeko_payment_event.dart';
@@ -7,13 +8,14 @@ class JekoPaymentBloc extends Bloc<JekoPaymentEvent, JekoPaymentState> {
   final JekoPaymentRepository _repository;
 
   JekoPaymentBloc(this._repository) : super(const JekoPaymentState()) {
-    on<LoadPaymentMethods>(_onLoadPaymentMethods);
-    on<InitiateWalletRecharge>(_onInitiateWalletRecharge);
-    on<InitiateOrderPayment>(_onInitiateOrderPayment);
-    on<CheckTransactionStatus>(_onCheckTransactionStatus);
-    on<LoadTransactionHistory>(_onLoadTransactionHistory);
-    on<PaymentSuccessCallback>(_onPaymentSuccessCallback);
-    on<PaymentErrorCallback>(_onPaymentErrorCallback);
+    on<LoadPaymentMethods>(_onLoadPaymentMethods, transformer: restartable());
+    // droppable() → ignore les double-taps (évite double paiement)
+    on<InitiateWalletRecharge>(_onInitiateWalletRecharge, transformer: droppable());
+    on<InitiateOrderPayment>(_onInitiateOrderPayment, transformer: droppable());
+    on<CheckTransactionStatus>(_onCheckTransactionStatus, transformer: droppable());
+    on<LoadTransactionHistory>(_onLoadTransactionHistory, transformer: restartable());
+    on<PaymentSuccessCallback>(_onPaymentSuccessCallback, transformer: droppable());
+    on<PaymentErrorCallback>(_onPaymentErrorCallback, transformer: droppable());
     on<ResetPaymentState>(_onResetPaymentState);
   }
 

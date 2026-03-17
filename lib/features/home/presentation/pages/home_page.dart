@@ -35,6 +35,9 @@ class _HomePageState extends State<HomePage> {
   Timer? _promoAutoScrollTimer;
   int _currentPromoPage = 0;
   
+  /// Subscription pour les deep links — DOIT être cancel dans dispose()
+  StreamSubscription? _deepLinkSubscription;
+  
   final List<_PromoItem> _promotions = [
     _PromoItem(
       title: '-20% première commande',
@@ -78,7 +81,7 @@ class _HomePageState extends State<HomePage> {
 
     // Écouter les deep links
     final deepLinkService = getIt<DeepLinkService>();
-    deepLinkService.onDeepLink.listen(_handleDeepLink);
+    _deepLinkSubscription = deepLinkService.onDeepLink.listen(_handleDeepLink);
   }
 
   void _handleDeepLink(DeepLinkData data) {
@@ -114,6 +117,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    _deepLinkSubscription?.cancel();
     _promoAutoScrollTimer?.cancel();
     _promoPageController.dispose();
     super.dispose();

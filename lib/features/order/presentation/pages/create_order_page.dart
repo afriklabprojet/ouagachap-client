@@ -1002,6 +1002,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
     );
 
     if (result != null) {
+      if (!mounted) return;
       setState(() {
         if (isPickup) {
           _pickupLatitude = result['latitude'];
@@ -1014,6 +1015,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
         }
       });
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/usecases/create_order_usecase.dart';
@@ -26,14 +27,15 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     required this.cancelOrderUseCase,
     required this.rateCourierUseCase,
   }) : super(OrderInitial()) {
-    on<CreateOrderRequested>(_onCreateOrderRequested);
-    on<GetOrdersRequested>(_onGetOrdersRequested);
-    on<GetOrderDetailsRequested>(_onGetOrderDetailsRequested);
-    on<CancelOrderRequested>(_onCancelOrderRequested);
-    on<CalculatePriceRequested>(_onCalculatePriceRequested);
-    on<StartOrderTrackingRequested>(_onStartOrderTrackingRequested);
+    // droppable() → ignore les taps rapides pendant qu'une opération est en cours
+    on<CreateOrderRequested>(_onCreateOrderRequested, transformer: droppable());
+    on<GetOrdersRequested>(_onGetOrdersRequested, transformer: restartable());
+    on<GetOrderDetailsRequested>(_onGetOrderDetailsRequested, transformer: restartable());
+    on<CancelOrderRequested>(_onCancelOrderRequested, transformer: droppable());
+    on<CalculatePriceRequested>(_onCalculatePriceRequested, transformer: restartable());
+    on<StartOrderTrackingRequested>(_onStartOrderTrackingRequested, transformer: restartable());
     on<StopOrderTrackingRequested>(_onStopOrderTrackingRequested);
-    on<RateCourierRequested>(_onRateCourierRequested);
+    on<RateCourierRequested>(_onRateCourierRequested, transformer: droppable());
   }
 
   Future<void> _onCreateOrderRequested(

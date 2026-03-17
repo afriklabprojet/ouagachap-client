@@ -1,3 +1,4 @@
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/repositories/wallet_repository.dart';
 import 'wallet_event.dart';
@@ -7,8 +8,10 @@ class WalletBloc extends Bloc<WalletEvent, WalletState> {
   final WalletRepository walletRepository;
 
   WalletBloc({required this.walletRepository}) : super(WalletInitial()) {
-    on<LoadWallet>(_onLoadWallet);
-    on<InitiateRecharge>(_onInitiateRecharge);
+    // restartable() → annule le chargement précédent si un nouveau arrive
+    on<LoadWallet>(_onLoadWallet, transformer: restartable());
+    // droppable() → ignore les double-taps sur recharge (évite double débit)
+    on<InitiateRecharge>(_onInitiateRecharge, transformer: droppable());
   }
 
   Future<void> _onLoadWallet(
@@ -18,8 +21,10 @@ class WalletBloc extends Bloc<WalletEvent, WalletState> {
     emit(WalletLoading());
     try {
       final wallet = await walletRepository.getWallet();
+      if (isClosed) return;
       emit(WalletLoaded(wallet: wallet));
     } catch (e) {
+      if (isClosed) return;
       emit(WalletError(message: e.toString()));
     }
   }
@@ -40,17 +45,21 @@ class WalletBloc extends Bloc<WalletEvent, WalletState> {
         provider: event.provider,
         phoneNumber: event.phoneNumber,
       );
+      if (isClosed) return;
       
       final message = response['message'] ?? 'Recharge initiée avec succès';
       
-      // Reload wallet to get updated balance
+      // Recharger le portefeuille pour avoir le solde mis à jour
       try {
         final wallet = await walletRepository.getWallet();
+        if (isClosed) return;
         emit(RechargeSuccess(message: message, wallet: wallet));
       } catch (_) {
+        if (isClosed) return;
         emit(RechargeSuccess(message: message, wallet: currentWallet));
       }
     } catch (e) {
+      if (isClosed) return;
       emit(RechargeError(
         message: e.toString(),
         currentWallet: currentWallet,

@@ -1,3 +1,4 @@
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
@@ -42,14 +43,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required this.getCurrentUserUseCase,
     required this.logoutUseCase,
   }) : super(AuthInitial()) {
-    on<AuthCheckRequested>(_onAuthCheckRequested);
-    on<AuthRegisterRequested>(_onAuthRegisterRequested);
-    on<AuthLoginRequested>(_onAuthLoginRequested);
-    on<AuthOtpVerificationRequested>(_onAuthOtpVerificationRequested);
-    on<AuthLogoutRequested>(_onAuthLogoutRequested);
-    on<AuthResendOtpRequested>(_onAuthResendOtpRequested);
-    on<UpdateProfileRequested>(_onUpdateProfileRequested);
-    on<AuthAutoVerified>(_onAuthAutoVerified);
+    on<AuthCheckRequested>(_onAuthCheckRequested, transformer: restartable());
+    // droppable() → empêche les double-taps sur login/register/OTP
+    on<AuthRegisterRequested>(_onAuthRegisterRequested, transformer: droppable());
+    on<AuthLoginRequested>(_onAuthLoginRequested, transformer: droppable());
+    on<AuthOtpVerificationRequested>(_onAuthOtpVerificationRequested, transformer: droppable());
+    on<AuthLogoutRequested>(_onAuthLogoutRequested, transformer: droppable());
+    on<AuthResendOtpRequested>(_onAuthResendOtpRequested, transformer: droppable());
+    on<UpdateProfileRequested>(_onUpdateProfileRequested, transformer: droppable());
+    on<AuthAutoVerified>(_onAuthAutoVerified, transformer: droppable());
   }
 
   Future<void> _onAuthCheckRequested(
@@ -91,6 +93,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         
         if (result.autoVerified && result.credential != null) {
           // Auto-vérification sur Android - connecter directement
+          if (isClosed) return;
           add(AuthAutoVerified(phone: event.phone, credential: result.credential!));
           return;
         }
@@ -106,8 +109,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         }
       }
       
+      if (isClosed) return;
       emit(AuthOtpSent(phone: event.phone, isLogin: false));
     } catch (e) {
+      if (isClosed) return;
       emit(AuthError(message: _extractErrorMessage(e)));
     }
   }
@@ -129,6 +134,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         
         if (result.autoVerified && result.credential != null) {
           // Auto-vérification sur Android - connecter directement
+          if (isClosed) return;
           add(AuthAutoVerified(phone: event.phone, credential: result.credential!));
           return;
         }
@@ -144,8 +150,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         }
       }
       
+      if (isClosed) return;
       emit(AuthOtpSent(phone: event.phone, isLogin: true));
     } catch (e) {
+      if (isClosed) return;
       emit(AuthError(message: _extractErrorMessage(e)));
     }
   }
@@ -201,8 +209,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       
       // Puis émettre l'état authentifié après un court délai
       await Future.delayed(const Duration(milliseconds: 500));
+      if (isClosed) return;
       emit(AuthAuthenticated(user: user));
     } catch (e) {
+      if (isClosed) return;
       emit(AuthError(message: _extractErrorMessage(e)));
     }
   }
@@ -220,9 +230,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // Se connecter avec le credential pour obtenir le idToken
       final firebaseAuth = FirebaseAuth.instance;
       final userCredential = await firebaseAuth.signInWithCredential(event.credential);
+      if (isClosed) return;
       final idToken = await userCredential.user?.getIdToken();
       
       if (idToken == null) {
+        if (isClosed) return;
         emit(const AuthError(message: 'Erreur lors de la récupération du token Firebase'));
         return;
       }
@@ -233,12 +245,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         otp: '000000', // Non utilisé car firebaseIdToken est fourni
         firebaseIdToken: idToken,
       );
+      if (isClosed) return;
       
       // Vérifier que l'utilisateur est un client
       if (!user.isClient) {
         try {
           await logoutUseCase();
         } catch (_) {}
+        if (isClosed) return;
         emit(const AuthError(
           message: 'Cette application est réservée aux clients. '
               'Si vous êtes coursier, veuillez utiliser l\'application Coursier OUAGA CHAP.',
@@ -249,8 +263,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // Enregistrer le token FCM après connexion réussie
       _registerFcmToken();
       
+      if (isClosed) return;
       emit(AuthAuthenticated(user: user));
     } catch (e) {
+      if (isClosed) return;
       emit(AuthError(message: _extractErrorMessage(e)));
     }
   }
@@ -296,10 +312,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } else {
         await loginUseCase(phone: event.phone);
       }
+      if (isClosed) return;
       
       // Renvoyer le SMS via Firebase si activé
       if (useFirebasePhoneAuth) {
         final result = await _firebasePhoneAuth.resendOtp(phoneNumber: event.phone);
+        if (isClosed) return;
         
         if (result.autoVerified && result.credential != null) {
           add(AuthAutoVerified(phone: event.phone, credential: result.credential!));
@@ -312,8 +330,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         }
       }
       
+      if (isClosed) return;
       emit(AuthOtpSent(phone: event.phone, isLogin: event.isLogin));
     } catch (e) {
+      if (isClosed) return;
       emit(AuthError(message: _extractErrorMessage(e)));
     }
   }
@@ -422,13 +442,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final formData = FormData.fromMap(formDataMap);
 
       // Envoyer la requête
-      final response = await apiClient.post(
+      await apiClient.post(
         'user/profile',
         data: formData,
       );
+      if (isClosed) return;
 
       // Recharger l'utilisateur mis à jour
       final user = await getCurrentUserUseCase();
+      if (isClosed) return;
       if (user != null) {
         emit(AuthAuthenticated(user: user));
       }

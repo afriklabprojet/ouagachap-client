@@ -56,6 +56,8 @@ class _MapPickerPageState extends State<MapPickerPage> {
   void dispose() {
     _searchDebounce?.cancel();
     _searchController.dispose();
+    // Disposer le GoogleMapController pour éviter les fuites mémoire
+    _mapController.future.then((c) => c.dispose()).catchError((_) {});
     super.dispose();
   }
 
@@ -112,8 +114,10 @@ class _MapPickerPageState extends State<MapPickerPage> {
     try {
       // Vérifier les permissions
       LocationPermission permission = await Geolocator.checkPermission();
+      if (!mounted) return;
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
+        if (!mounted) return;
         if (permission == LocationPermission.denied) {
           _showError('Permission de localisation refusée');
           return;
@@ -134,11 +138,13 @@ class _MapPickerPageState extends State<MapPickerPage> {
           timeLimit: Duration(seconds: 10),
         ),
       );
+      if (!mounted) return;
 
       final newPosition = LatLng(position.latitude, position.longitude);
       
       // Déplacer la carte
       final controller = await _mapController.future;
+      if (!mounted) return;
       controller.animateCamera(CameraUpdate.newLatLng(newPosition));
 
       setState(() => _selectedPosition = newPosition);
@@ -170,6 +176,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
 
     // Déplacer la carte
     final controller = await _mapController.future;
+    if (!mounted) return;
     controller.animateCamera(CameraUpdate.newLatLngZoom(newPosition, 17));
 
     setState(() {
@@ -214,7 +221,9 @@ class _MapPickerPageState extends State<MapPickerPage> {
               zoom: 15,
             ),
             onMapCreated: (controller) {
-              _mapController.complete(controller);
+              if (!_mapController.isCompleted) {
+                _mapController.complete(controller);
+              }
             },
             onTap: _onMapTap,
             markers: {

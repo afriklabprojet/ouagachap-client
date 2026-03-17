@@ -58,7 +58,9 @@ class _OrderChatPageState extends State<OrderChatPage> {
     _focusNode.requestFocus();
 
     // Scroller vers le bas
-    Future.delayed(const Duration(milliseconds: 100), _scrollToBottom);
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) _scrollToBottom();
+    });
   }
 
   void _scrollToBottom() {
@@ -91,7 +93,9 @@ class _OrderChatPageState extends State<OrderChatPage> {
                 if (state is OrderChatReady) {
                   Future.delayed(
                     const Duration(milliseconds: 100),
-                    _scrollToBottom,
+                    () {
+                      if (mounted) _scrollToBottom();
+                    },
                   );
                 }
               },

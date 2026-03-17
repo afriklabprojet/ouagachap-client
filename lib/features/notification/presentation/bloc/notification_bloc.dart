@@ -1,3 +1,4 @@
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/usecases/get_notifications_usecase.dart';
 import '../../domain/usecases/mark_notification_read_usecase.dart';
@@ -12,8 +13,8 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     required this.getNotificationsUseCase,
     required this.markNotificationReadUseCase,
   }) : super(NotificationInitial()) {
-    on<LoadNotifications>(_onLoadNotifications);
-    on<MarkAsRead>(_onMarkAsRead);
+    on<LoadNotifications>(_onLoadNotifications, transformer: restartable());
+    on<MarkAsRead>(_onMarkAsRead, transformer: droppable());
   }
 
   Future<void> _onLoadNotifications(
@@ -26,7 +27,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
 
     try {
       final notifications = await getNotificationsUseCase.call();
-      // Calculate unread count locally for now or add a usecase for it
+      if (isClosed) return;
       final unreadCount = notifications.where((n) => !n.isRead).length; 
       
       emit(NotificationLoaded(
@@ -34,6 +35,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
         unreadCount: unreadCount,
       ));
     } catch (e) {
+      if (isClosed) return;
       emit(NotificationError(e.toString()));
     }
   }
@@ -46,22 +48,14 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     if (currentState is NotificationLoaded) {
       try {
         await markNotificationReadUseCase.call(event.id);
+        if (isClosed) return;
         
-        // Optimistic update
-        final updatedList = currentState.notifications.map((n) {
-          if (n.id == event.id) {
-             // Return a copy marked as read - since entities are immutable we'd normally use copyWith
-             // For simplicity here, assuming we reload or have copyWith
-             // Ideally Entity should have copyWith
-             return n; // TODO: Implement copyWith on entity or immutable update
-          }
-          return n;
-        }).toList();
-        
-        // Refresh list from server to be sure
-        add(const LoadNotifications());
+        // Rafraîchir la liste depuis le serveur
+        if (!isClosed) {
+          add(const LoadNotifications());
+        }
       } catch (e) {
-        // Handle error silently or show snackbar via BlocListener
+        // Erreur silencieuse ou notification via BlocListener
       }
     }
   }

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/services/websocket_service.dart';
@@ -15,7 +16,8 @@ class LiveTrackingBloc extends Bloc<LiveTrackingEvent, LiveTrackingState> {
     required WebSocketService webSocketService,
   })  : _webSocketService = webSocketService,
         super(const LiveTrackingState()) {
-    on<StartTracking>(_onStartTracking);
+    // droppable() → empêche le double StartTracking (deux connexions WebSocket)
+    on<StartTracking>(_onStartTracking, transformer: droppable());
     on<StopTracking>(_onStopTracking);
     on<CourierLocationUpdated>(_onCourierLocationUpdated);
     on<OrderStatusUpdated>(_onOrderStatusUpdated);
@@ -39,6 +41,7 @@ class LiveTrackingBloc extends Bloc<LiveTrackingEvent, LiveTrackingState> {
     try {
       // Connecter au WebSocket
       await _webSocketService.connect();
+      if (isClosed) return;
 
       // S'abonner au canal de la commande
       final channel = 'order.${event.orderId}';
@@ -49,12 +52,14 @@ class LiveTrackingBloc extends Bloc<LiveTrackingEvent, LiveTrackingState> {
       _messageSubscription = _webSocketService.messages.listen(
         (message) => _handleWebSocketMessage(message),
         onError: (error) {
-          add(TrackingConnectionError(error.toString()));
+          if (!isClosed) {
+            add(TrackingConnectionError(error.toString()));
+          }
         },
       );
 
       // Vérifier si connecté
-      if (_webSocketService.isConnected) {
+      if (_webSocketService.isConnected && !isClosed) {
         add(const TrackingConnected());
       }
     } catch (e) {
@@ -66,6 +71,9 @@ class LiveTrackingBloc extends Bloc<LiveTrackingEvent, LiveTrackingState> {
   }
 
   void _handleWebSocketMessage(Map<String, dynamic> message) {
+    // Vérifier que le BLoC n'est pas fermé avant d'ajouter des événements
+    if (isClosed) return;
+    
     final event = message['event'] as String?;
     final channel = message['channel'] as String?;
     
@@ -100,6 +108,7 @@ class LiveTrackingBloc extends Bloc<LiveTrackingEvent, LiveTrackingState> {
   }
 
   void _handleLocationUpdate(Map<String, dynamic> data) {
+    if (isClosed) return;
     add(CourierLocationUpdated(
       latitude: (data['latitude'] as num).toDouble(),
       longitude: (data['longitude'] as num).toDouble(),
@@ -113,6 +122,7 @@ class LiveTrackingBloc extends Bloc<LiveTrackingEvent, LiveTrackingState> {
 
   /// Gère les updates de tracking complet (position + ETA)
   void _handleTrackingUpdate(Map<String, dynamic> data) {
+    if (isClosed) return;
     // Extraire les données du courier
     final courier = data['courier'] as Map<String, dynamic>?;
     if (courier != null) {
@@ -152,6 +162,7 @@ class LiveTrackingBloc extends Bloc<LiveTrackingEvent, LiveTrackingState> {
   }
 
   void _handleStatusUpdate(Map<String, dynamic> data) {
+    if (isClosed) return;
     add(OrderStatusUpdated(
       status: data['status'] as String,
       message: data['message'] as String?,
@@ -162,6 +173,7 @@ class LiveTrackingBloc extends Bloc<LiveTrackingEvent, LiveTrackingState> {
   }
 
   void _handleETAUpdate(Map<String, dynamic> data) {
+    if (isClosed) return;
     add(ETAUpdated(
       estimatedMinutes: data['estimated_minutes'] as int,
       distanceKm: (data['distance_km'] as num).toDouble(),
@@ -285,6 +297,11 @@ class LiveTrackingBloc extends Bloc<LiveTrackingEvent, LiveTrackingState> {
   @override
   Future<void> close() {
     _messageSubscription?.cancel();
+    _messageSubscription = null;
+    // Désabonner du canal et déconnecter le WebSocket proprement
+    if (state.orderId != null) {
+      _webSocketService.unsubscribe('order.${state.orderId}');
+    }
     return super.close();
   }
 }

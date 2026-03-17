@@ -215,7 +215,7 @@ class WebSocketService {
       'event': 'pusher:subscribe',
       'data': {'channel': channel},
     });
-    });    debugPrint('WebSocket: Subscribing to $channel');
+    debugPrint('WebSocket: Subscribing to $channel');
   }
 
   /// Se désabonner d'un canal

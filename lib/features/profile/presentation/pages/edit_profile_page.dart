@@ -190,16 +190,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
         // Attendre un peu pour le feedback visuel
         await Future.delayed(const Duration(milliseconds: 500));
         
-        if (mounted) {
-          setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Profil mis à jour avec succès !'),
-              backgroundColor: AppColors.success,
-            ),
-          );
-          context.go(Routes.profile);
-        }
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profil mis à jour avec succès !'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        context.go(Routes.profile);
       } catch (e) {
         if (mounted) {
           setState(() => _isLoading = false);

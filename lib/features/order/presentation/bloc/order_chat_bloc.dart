@@ -1,3 +1,4 @@
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 
@@ -96,10 +97,11 @@ class OrderChatBloc extends Bloc<OrderChatEvent, OrderChatState> {
   String? _orderUuid;
 
   OrderChatBloc(this._repository) : super(const OrderChatInitial()) {
-    on<LoadOrderChat>(_onLoadChat);
-    on<SendOrderMessage>(_onSendMessage);
-    on<RefreshChat>(_onRefresh);
-    on<MarkMessagesRead>(_onMarkRead);
+    on<LoadOrderChat>(_onLoadChat, transformer: restartable());
+    // droppable() → empêche les double envois de messages
+    on<SendOrderMessage>(_onSendMessage, transformer: droppable());
+    on<RefreshChat>(_onRefresh, transformer: restartable());
+    on<MarkMessagesRead>(_onMarkRead, transformer: droppable());
   }
 
   Future<void> _onLoadChat(
@@ -111,9 +113,12 @@ class OrderChatBloc extends Bloc<OrderChatEvent, OrderChatState> {
 
     try {
       final chat = await _repository.getOrderChat(event.orderUuid);
+      if (isClosed) return;
       await _repository.markAsRead(event.orderUuid);
+      if (isClosed) return;
       emit(OrderChatReady(chat: chat, messages: chat.messages));
     } catch (e) {
+      if (isClosed) return;
       emit(OrderChatError(_errorMessage(e)));
     }
   }
@@ -137,18 +142,25 @@ class OrderChatBloc extends Bloc<OrderChatEvent, OrderChatState> {
 
     try {
       final sent = await _repository.sendMessage(_orderUuid!, event.message);
+      if (isClosed) return;
+      // Relire l'état actuel car il a pu changer pendant l'attente
+      final latestState = state;
+      if (latestState is! OrderChatReady) return;
       // Remplacer le message local par le message confirmé
-      final updated = current.messages
+      final updated = latestState.messages
           .where((m) => m.id != localMsg.id)
           .toList()
         ..add(sent);
-      emit(current.copyWith(messages: updated, isSending: false));
+      emit(latestState.copyWith(messages: updated, isSending: false));
     } catch (e) {
-      // Retirer le message local en cas d'erreur
-      final reverted = current.messages
+      if (isClosed) return;
+      // Relire l'état actuel pour retirer le message local
+      final latestState = state;
+      if (latestState is! OrderChatReady) return;
+      final reverted = latestState.messages
           .where((m) => m.id != localMsg.id)
           .toList();
-      emit(current.copyWith(messages: reverted, isSending: false));
+      emit(latestState.copyWith(messages: reverted, isSending: false));
     }
   }
 
@@ -157,12 +169,16 @@ class OrderChatBloc extends Bloc<OrderChatEvent, OrderChatState> {
     Emitter<OrderChatState> emit,
   ) async {
     if (_orderUuid == null || state is! OrderChatReady) return;
-    final current = state as OrderChatReady;
 
     try {
       final chat = await _repository.getOrderChat(_orderUuid!);
+      if (isClosed) return;
       await _repository.markAsRead(_orderUuid!);
-      emit(current.copyWith(chat: chat, messages: chat.messages));
+      if (isClosed) return;
+      // Relire l'état actuel
+      final latestState = state;
+      if (latestState is! OrderChatReady) return;
+      emit(latestState.copyWith(chat: chat, messages: chat.messages));
     } catch (_) {
       // Ignorer l'erreur de refresh silencieux
     }

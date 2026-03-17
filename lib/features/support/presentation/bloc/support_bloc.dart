@@ -1,3 +1,4 @@
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/repositories/support_repository.dart';
 import 'support_event.dart';
@@ -7,20 +8,21 @@ class SupportBloc extends Bloc<SupportEvent, SupportState> {
   final SupportRepository _repository;
 
   SupportBloc(this._repository) : super(const SupportState()) {
-    on<LoadContactInfo>(_onLoadContactInfo);
-    on<LoadFaqs>(_onLoadFaqs);
+    on<LoadContactInfo>(_onLoadContactInfo, transformer: restartable());
+    on<LoadFaqs>(_onLoadFaqs, transformer: restartable());
     on<ViewFaq>(_onViewFaq);
     on<ChangeFaqCategory>(_onChangeFaqCategory);
-    on<SearchFaqs>(_onSearchFaqs);
-    on<LoadChats>(_onLoadChats);
-    on<OpenChat>(_onOpenChat);
-    on<LoadChatMessages>(_onLoadChatMessages);
-    on<SendChatMessage>(_onSendChatMessage);
-    on<CloseChat>(_onCloseChat);
-    on<LoadComplaints>(_onLoadComplaints);
-    on<LoadComplaintDetails>(_onLoadComplaintDetails);
-    on<CreateComplaint>(_onCreateComplaint);
-    on<AddComplaintMessage>(_onAddComplaintMessage);
+    on<SearchFaqs>(_onSearchFaqs, transformer: restartable());
+    on<LoadChats>(_onLoadChats, transformer: restartable());
+    on<OpenChat>(_onOpenChat, transformer: droppable());
+    on<LoadChatMessages>(_onLoadChatMessages, transformer: restartable());
+    // droppable() → empêche les double envois de messages/réclamations
+    on<SendChatMessage>(_onSendChatMessage, transformer: droppable());
+    on<CloseChat>(_onCloseChat, transformer: droppable());
+    on<LoadComplaints>(_onLoadComplaints, transformer: restartable());
+    on<LoadComplaintDetails>(_onLoadComplaintDetails, transformer: restartable());
+    on<CreateComplaint>(_onCreateComplaint, transformer: droppable());
+    on<AddComplaintMessage>(_onAddComplaintMessage, transformer: droppable());
     on<ResetSupportState>(_onResetSupportState);
     on<ClearSupportError>(_onClearSupportError);
   }
@@ -88,7 +90,7 @@ class SupportBloc extends Bloc<SupportEvent, SupportState> {
     Emitter<SupportState> emit,
   ) async {
     emit(state.copyWith(selectedFaqCategory: event.category));
-    add(LoadFaqs(category: event.category));
+    if (!isClosed) add(LoadFaqs(category: event.category));
   }
 
   Future<void> _onSearchFaqs(
@@ -96,7 +98,7 @@ class SupportBloc extends Bloc<SupportEvent, SupportState> {
     Emitter<SupportState> emit,
   ) async {
     emit(state.copyWith(faqSearchQuery: event.query));
-    add(LoadFaqs(search: event.query));
+    if (!isClosed) add(LoadFaqs(search: event.query));
   }
 
   // ==================== CHAT ====================
@@ -190,9 +192,11 @@ class SupportBloc extends Bloc<SupportEvent, SupportState> {
   ) async {
     try {
       await _repository.closeChat(event.chatId);
-      add(LoadChats());
+      if (isClosed) return;
+      if (!isClosed) add(LoadChats());
       emit(state.copyWith(clearCurrentChat: true));
     } catch (e) {
+      if (isClosed) return;
       emit(state.copyWith(
         errorMessage: 'Erreur lors de la fermeture du chat: $e',
       ));

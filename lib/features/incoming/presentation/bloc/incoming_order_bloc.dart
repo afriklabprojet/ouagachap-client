@@ -1,3 +1,4 @@
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/repositories/incoming_order_repository.dart';
 import '../../domain/entities/incoming_order.dart';
@@ -9,11 +10,12 @@ class IncomingOrderBloc extends Bloc<IncomingOrderEvent, IncomingOrderState> {
   String? _currentFilter;
 
   IncomingOrderBloc(this._repository) : super(const IncomingOrderInitial()) {
-    on<LoadIncomingOrders>(_onLoadIncomingOrders);
-    on<LoadIncomingOrderDetails>(_onLoadDetails);
-    on<TrackIncomingOrder>(_onTrackOrder);
-    on<ConfirmIncomingOrderReceipt>(_onConfirmReceipt);
-    on<RefreshIncomingOrders>(_onRefresh);
+    on<LoadIncomingOrders>(_onLoadIncomingOrders, transformer: restartable());
+    on<LoadIncomingOrderDetails>(_onLoadDetails, transformer: restartable());
+    on<TrackIncomingOrder>(_onTrackOrder, transformer: restartable());
+    // droppable() → empêche la double confirmation de réception
+    on<ConfirmIncomingOrderReceipt>(_onConfirmReceipt, transformer: droppable());
+    on<RefreshIncomingOrders>(_onRefresh, transformer: restartable());
   }
 
   Future<void> _onLoadIncomingOrders(
@@ -80,13 +82,17 @@ class IncomingOrderBloc extends Bloc<IncomingOrderEvent, IncomingOrderState> {
     
     try {
       await _repository.confirmReceipt(event.orderId, event.confirmationCode);
+      if (isClosed) return;
       emit(const IncomingOrderReceiptConfirmed(
         'Réception confirmée ! Le coursier a été notifié.',
       ));
       
       // Recharger les détails après confirmation
-      add(LoadIncomingOrderDetails(event.orderId));
+      if (!isClosed) {
+        add(LoadIncomingOrderDetails(event.orderId));
+      }
     } catch (e) {
+      if (isClosed) return;
       emit(IncomingOrderError(_extractErrorMessage(e)));
     }
   }

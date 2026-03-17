@@ -60,6 +60,8 @@ class _LiveTrackingPageState extends State<LiveTrackingPage> {
 
   @override
   void dispose() {
+    // Disposer le GoogleMapController pour éviter les fuites mémoire
+    _mapController.future.then((c) => c.dispose()).catchError((_) {});
     context.read<LiveTrackingBloc>().add(const StopTracking());
     super.dispose();
   }
@@ -135,14 +137,17 @@ class _LiveTrackingPageState extends State<LiveTrackingPage> {
   }
 
   Future<void> _animateCameraToPosition(LatLng position) async {
+    if (!mounted) return;
     final controller = await _mapController.future;
+    if (!mounted) return;
     controller.animateCamera(CameraUpdate.newLatLng(position));
   }
 
   Future<void> _fitAllMarkers() async {
-    if (_markers.length < 2) return;
+    if (_markers.length < 2 || !mounted) return;
 
     final controller = await _mapController.future;
+    if (!mounted) return;
     
     double minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
     
@@ -198,9 +203,13 @@ class _LiveTrackingPageState extends State<LiveTrackingPage> {
                   zoom: 14,
                 ),
                 onMapCreated: (controller) {
-                  _mapController.complete(controller);
+                  if (!_mapController.isCompleted) {
+                    _mapController.complete(controller);
+                  }
                   // Ajuster la vue après création
-                  Future.delayed(const Duration(milliseconds: 500), _fitAllMarkers);
+                  Future.delayed(const Duration(milliseconds: 500), () {
+                    if (mounted) _fitAllMarkers();
+                  });
                 },
                 markers: _markers,
                 polylines: _polylines,

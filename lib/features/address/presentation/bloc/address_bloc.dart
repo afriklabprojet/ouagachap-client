@@ -1,3 +1,4 @@
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/repositories/address_repository.dart';
 import '../../domain/entities/saved_address.dart';
@@ -8,11 +9,12 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
   final AddressRepository _repository;
 
   AddressBloc(this._repository) : super(const AddressState()) {
-    on<LoadAddresses>(_onLoadAddresses);
-    on<CreateAddress>(_onCreateAddress);
-    on<UpdateAddress>(_onUpdateAddress);
-    on<DeleteAddress>(_onDeleteAddress);
-    on<SetDefaultAddress>(_onSetDefaultAddress);
+    on<LoadAddresses>(_onLoadAddresses, transformer: restartable());
+    // droppable() → empêche la double création/suppression d'adresses
+    on<CreateAddress>(_onCreateAddress, transformer: droppable());
+    on<UpdateAddress>(_onUpdateAddress, transformer: droppable());
+    on<DeleteAddress>(_onDeleteAddress, transformer: droppable());
+    on<SetDefaultAddress>(_onSetDefaultAddress, transformer: droppable());
   }
 
   Future<void> _onLoadAddresses(
@@ -133,12 +135,17 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
 
     try {
       await _repository.deleteAddress(event.id);
+      if (isClosed) return;
 
-      final deletedAddress = state.addresses.firstWhere((a) => a.id == event.id);
+      // Utiliser orElse pour éviter un crash si l'adresse n'existe plus
+      final deletedAddress = state.addresses.cast<SavedAddress?>().firstWhere(
+        (a) => a!.id == event.id,
+        orElse: () => null,
+      );
       final updatedAddresses = state.addresses.where((a) => a.id != event.id).toList();
 
-      // If deleted was default, set first remaining as default
-      if (deletedAddress.isDefault && updatedAddresses.isNotEmpty) {
+      // Si l'adresse supprimée était par défaut, mettre la première restante par défaut
+      if (deletedAddress?.isDefault == true && updatedAddresses.isNotEmpty) {
         updatedAddresses[0] = updatedAddresses[0].copyWith(isDefault: true);
       }
 
@@ -147,6 +154,7 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
         addresses: updatedAddresses,
       ));
     } catch (e) {
+      if (isClosed) return;
       emit(state.copyWith(
         isDeleting: false,
         errorMessage: e.toString(),
