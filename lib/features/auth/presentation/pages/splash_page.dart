@@ -139,10 +139,14 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                             ),
                           ],
                         ),
-                        child: const Icon(
-                          Icons.delivery_dining,
-                          size: 70,
-                          color: AppColors.primary,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(30),
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            width: 120,
+                            height: 120,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 24),

@@ -96,17 +96,13 @@ class _LoginPageState extends State<LoginPage> {
                   FadeInWidget(
                     duration: const Duration(milliseconds: 600),
                     child: Center(
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Icon(
-                          Icons.delivery_dining,
-                          size: 50,
-                          color: AppColors.primary,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
