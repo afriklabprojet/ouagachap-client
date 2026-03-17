@@ -1,7 +1,13 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Service de cache local pour le mode offline
+/// Service de cache local avec stratégie Stale-While-Revalidate.
+/// 
+/// **Principe** : Sur un réseau 3G lent ou en mode offline,
+/// retourner les données expirées vaut mieux qu'un écran vide.
+/// Les appelants peuvent vérifier [CacheResult.isStale] pour savoir
+/// si les données sont périmées et lancer un rafraîchissement en arrière-plan.
 class CacheService {
   static const Duration _defaultCacheDuration = Duration(hours: 1);
   
@@ -24,10 +30,18 @@ class CacheService {
     await _prefs.setString(key, jsonEncode(cacheData.toJson()));
   }
   
-  /// Récupérer des données du cache
+  /// Récupérer des données du cache.
+  /// 
+  /// **Stale-While-Revalidate** : si le cache est expiré, les données
+  /// sont quand même retournées (l'appelant peut vérifier [isStale]).
+  /// Seules les entrées corrompues sont supprimées.
+  /// 
+  /// [allowStale] : si `false`, l'ancien comportement est utilisé
+  /// (retourne `null` si expiré). Par défaut `true`.
   T? get<T>({
     required String key,
     T Function(Map<String, dynamic>)? fromJson,
+    bool allowStale = true,
   }) {
     final cached = _prefs.getString(key);
     if (cached == null) return null;
@@ -35,9 +49,8 @@ class CacheService {
     try {
       final entry = _CacheEntry.fromJson(jsonDecode(cached));
       
-      // Vérifier si le cache a expiré
-      if (entry.isExpired) {
-        remove(key);
+      // Si expiré et stale non autorisé → ancien comportement
+      if (entry.isExpired && !allowStale) {
         return null;
       }
       
@@ -47,15 +60,19 @@ class CacheService {
       
       return entry.data as T?;
     } catch (e) {
+      debugPrint('⚠️ Cache: entrée corrompue pour "$key", suppression');
       remove(key);
       return null;
     }
   }
   
-  /// Récupérer une liste du cache
+  /// Récupérer une liste du cache.
+  /// 
+  /// Même logique stale-while-revalidate que [get].
   List<T>? getList<T>({
     required String key,
     T Function(Map<String, dynamic>)? fromJson,
+    bool allowStale = true,
   }) {
     final cached = _prefs.getString(key);
     if (cached == null) return null;
@@ -63,8 +80,7 @@ class CacheService {
     try {
       final entry = _CacheEntry.fromJson(jsonDecode(cached));
       
-      if (entry.isExpired) {
-        remove(key);
+      if (entry.isExpired && !allowStale) {
         return null;
       }
       
@@ -86,14 +102,32 @@ class CacheService {
     }
   }
   
-  /// Vérifier si une clé existe et n'a pas expiré
+  /// Vérifier si une clé existe dans le cache (même expirée)
   bool has(String key) {
+    return _prefs.getString(key) != null;
+  }
+  
+  /// Vérifier si une clé est dans le cache ET n'a pas expiré
+  bool isFresh(String key) {
     final cached = _prefs.getString(key);
     if (cached == null) return false;
     
     try {
       final entry = _CacheEntry.fromJson(jsonDecode(cached));
       return !entry.isExpired;
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  /// Vérifier si une clé existe mais est expirée (stale)
+  bool isStale(String key) {
+    final cached = _prefs.getString(key);
+    if (cached == null) return false;
+    
+    try {
+      final entry = _CacheEntry.fromJson(jsonDecode(cached));
+      return entry.isExpired;
     } catch (e) {
       return false;
     }

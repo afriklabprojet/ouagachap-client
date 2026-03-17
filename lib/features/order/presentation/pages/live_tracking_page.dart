@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -740,9 +741,18 @@ class _LiveTrackingPageState extends State<LiveTrackingPage>
             child: _courierPosition!.courierPhoto != null
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      _courierPosition!.courierPhoto!,
+                    child: CachedNetworkImage(
+                      imageUrl: _courierPosition!.courierPhoto!,
                       fit: BoxFit.cover,
+                      memCacheWidth: 100, // 2x taille widget (50px) pour Retina
+                      placeholder: (context, url) => const Icon(
+                        Icons.person,
+                        color: AppColors.primary,
+                      ),
+                      errorWidget: (context, url, error) => const Icon(
+                        Icons.person,
+                        color: AppColors.primary,
+                      ),
                     ),
                   )
                 : const Icon(

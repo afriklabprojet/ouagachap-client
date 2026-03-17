@@ -67,11 +67,18 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 separatorBuilder: (context, index) => const Divider(height: 1),
                 itemBuilder: (context, index) {
                   final notification = state.notifications[index];
-                  return SlideInWidget(
-                    delay: Duration(milliseconds: 50 * index),
-                    beginOffset: const Offset(0.2, 0),
-                    child: _buildNotificationTile(notification),
-                  );
+                  // Animer uniquement les 10 premiers éléments visibles.
+                  // Les éléments au-delà sont hors écran au chargement initial,
+                  // donc l'animation serait gaspillée.
+                  final child = _buildNotificationTile(notification);
+                  if (index < 10) {
+                    return SlideInWidget(
+                      delay: Duration(milliseconds: 50 * index),
+                      beginOffset: const Offset(0.2, 0),
+                      child: child,
+                    );
+                  }
+                  return child;
                 },
               ),
             );

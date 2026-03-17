@@ -143,11 +143,13 @@ class _HomePageState extends State<HomePage> {
           },
           child: CustomScrollView(
             slivers: [
+              // Délais d'animation réduits : 0→50→100→150→200→250ms
+              // au lieu de 100→200→300→400→500→600ms.
+              // Sur un téléphone low-end, 600ms de cascade = contenu invisible trop longtemps.
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
                 sliver: SliverToBoxAdapter(
                   child: FadeInWidget(
-                    delay: const Duration(milliseconds: 100),
                     child: _buildHeader(),
                   ),
                 ),
@@ -157,7 +159,7 @@ class _HomePageState extends State<HomePage> {
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 sliver: SliverToBoxAdapter(
                   child: SlideInWidget(
-                    delay: const Duration(milliseconds: 200),
+                    delay: const Duration(milliseconds: 50),
                     child: _buildWelcomeBanner(),
                   ),
                 ),
@@ -172,7 +174,7 @@ class _HomePageState extends State<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       FadeInWidget(
-                        delay: const Duration(milliseconds: 300),
+                        delay: const Duration(milliseconds: 100),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -203,7 +205,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                       const SizedBox(height: 16),
                       ScaleInWidget(
-                        delay: const Duration(milliseconds: 400),
+                        delay: const Duration(milliseconds: 150),
                         child: _buildServicesGrid(),
                       ),
                     ],
@@ -216,7 +218,7 @@ class _HomePageState extends State<HomePage> {
               // Section Promotions
               SliverToBoxAdapter(
                 child: FadeInWidget(
-                  delay: const Duration(milliseconds: 500),
+                  delay: const Duration(milliseconds: 200),
                   child: _buildPromotionsSection(),
                 ),
               ),
@@ -225,7 +227,7 @@ class _HomePageState extends State<HomePage> {
               
               SliverToBoxAdapter(
                 child: SlideInWidget(
-                  delay: const Duration(milliseconds: 600),
+                  delay: const Duration(milliseconds: 250),
                   child: _buildActiveOrders(),
                 ),
               ),

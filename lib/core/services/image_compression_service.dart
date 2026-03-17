@@ -115,17 +115,26 @@ class ImageCompressionService {
     }
   }
 
-  /// Compresse plusieurs images en parallèle
+  /// Compresse plusieurs images de manière séquentielle.
+  /// 
+  /// **Pourquoi séquentiel ?** Sur les téléphones low-end (1-2 Go RAM),
+  /// compresser en parallèle via `Future.wait()` charge toutes les images
+  /// en mémoire simultanément, ce qui provoque un OOM crash.
+  /// Le traitement séquentiel garantit qu'une seule image est en mémoire à la fois.
   Future<List<String>> compressMultipleImages(
     List<String> filePaths, {
     int quality = defaultQuality,
   }) async {
-    final futures = filePaths.map(
-      (path) => compressImageFile(path, quality: quality),
-    );
-
-    final results = await Future.wait(futures);
-    return results.whereType<String>().toList();
+    final results = <String>[];
+    
+    for (final filePath in filePaths) {
+      final compressed = await compressImageFile(filePath, quality: quality);
+      if (compressed != null) {
+        results.add(compressed);
+      }
+    }
+    
+    return results;
   }
 
   /// Génère une miniature (thumbnail)

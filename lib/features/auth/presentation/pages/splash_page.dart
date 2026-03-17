@@ -44,7 +44,11 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
   }
 
   Future<void> _checkAuthAndNavigate() async {
-    await Future.delayed(const Duration(seconds: 2));
+    // Attendre que l'animation du logo soit visible (1.5s de l'AnimationController),
+    // mais naviguer dès que l'animation est à 60% au lieu d'attendre 2s fixes.
+    // Sur un téléphone lent, l'animation peut mettre plus de temps, 
+    // donc on attend le minimum entre animation et auth check.
+    await Future.delayed(const Duration(milliseconds: 800));
 
     if (!mounted) return;
 

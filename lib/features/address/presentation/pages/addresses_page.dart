@@ -64,10 +64,16 @@ class _AddressesPageState extends State<AddressesPage> {
               itemCount: state.addresses.length,
               itemBuilder: (context, index) {
                 final address = state.addresses[index];
-                return SlideInWidget(
-                  delay: Duration(milliseconds: 50 * index),
-                  child: _buildAddressCard(address, state.isDeleting),
-                );
+                // Animer uniquement les 10 premiers éléments visibles.
+                // Au-delà, l'animation n'est pas visible (hors écran)
+                // et chaque AnimationController consomme de la mémoire.
+                if (index < 10) {
+                  return SlideInWidget(
+                    delay: Duration(milliseconds: 50 * index),
+                    child: _buildAddressCard(address, state.isDeleting),
+                  );
+                }
+                return _buildAddressCard(address, state.isDeleting);
               },
             ),
           );

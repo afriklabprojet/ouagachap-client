@@ -27,6 +27,12 @@ class _MapPickerPageState extends State<MapPickerPage> {
   final Completer<GoogleMapController> _mapController = Completer();
   final GeocodingService _geocodingService = GeocodingService();
   final TextEditingController _searchController = TextEditingController();
+  
+  /// Timer de debounce pour la recherche d'adresse.
+  /// Évite de bombarder Nominatim à chaque frappe clavier.
+  /// 500ms est un bon compromis : assez rapide pour sembler réactif,
+  /// assez lent pour éviter les requêtes inutiles sur 3G.
+  Timer? _searchDebounce;
 
   // Coordonnées par défaut : centre de Ouagadougou
   static const LatLng _defaultPosition = LatLng(12.3714, -1.5197);
@@ -48,6 +54,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -68,7 +75,11 @@ class _MapPickerPageState extends State<MapPickerPage> {
     }
   }
 
-  Future<void> _searchAddress(String query) async {
+  /// Recherche d'adresse avec debounce de 500ms.
+  /// Annule la recherche précédente si l'utilisateur continue de taper.
+  void _onSearchChanged(String query) {
+    _searchDebounce?.cancel();
+    
     if (query.length < 3) {
       setState(() {
         _searchResults = [];
@@ -76,9 +87,15 @@ class _MapPickerPageState extends State<MapPickerPage> {
       });
       return;
     }
-
+    
     setState(() => _isSearching = true);
+    
+    _searchDebounce = Timer(const Duration(milliseconds: 500), () {
+      _searchAddress(query);
+    });
+  }
 
+  Future<void> _searchAddress(String query) async {
     final results = await _geocodingService.searchAddress(query);
 
     if (mounted) {
@@ -108,10 +125,12 @@ class _MapPickerPageState extends State<MapPickerPage> {
         return;
       }
 
-      // Obtenir la position
+      // LocationAccuracy.medium suffit pour une app de livraison
+      // (±50m de précision). `.high` active le GPS hardware qui
+      // consomme beaucoup de batterie et prend plus de temps.
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
+          accuracy: LocationAccuracy.medium,
           timeLimit: Duration(seconds: 10),
         ),
       );
@@ -252,7 +271,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
                         vertical: 14,
                       ),
                     ),
-                    onChanged: _searchAddress,
+                    onChanged: _onSearchChanged,
                   ),
                 ),
                 // Résultats de recherche

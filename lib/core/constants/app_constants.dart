@@ -30,9 +30,16 @@ class AppConstants {
   /// Clé d'application WebSocket (Laravel Reverb/Pusher)
   static const String wsAppKey = 'ouagachap-app-key';
   
-  /// Timeouts en millisecondes
-  static const int connectTimeout = 30000;
-  static const int receiveTimeout = 30000;
+  /// Timeouts en millisecondes.
+  /// 
+  /// Valeurs optimisées pour les réseaux 3G africains :
+  /// - connectTimeout : 15s suffit pour établir la connexion TCP+TLS
+  /// - receiveTimeout : 20s pour recevoir la réponse complète
+  /// 
+  /// Des valeurs trop élevées (30s+) gèlent l'UI trop longtemps
+  /// avant d'afficher un message d'erreur utile à l'utilisateur.
+  static const int connectTimeout = 15000;
+  static const int receiveTimeout = 20000;
   
   // Storage Keys
   static const String tokenKey = 'auth_token';

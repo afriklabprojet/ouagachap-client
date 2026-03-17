@@ -267,12 +267,17 @@ class _ScaleInWidgetState extends State<ScaleInWidget>
   }
 }
 
-/// Widget pour animer une liste d'éléments séquentiellement
+/// Widget pour animer une liste d'éléments séquentiellement.
+/// 
+/// [maxAnimatedItems] limite le nombre d'éléments animés pour éviter
+/// de créer des centaines d'AnimationControllers sur de longues listes.
+/// Les éléments au-delà sont affichés sans animation.
 class StaggeredListAnimation extends StatelessWidget {
   final List<Widget> children;
   final Duration itemDuration;
   final Duration staggerDelay;
   final EdgeInsetsGeometry? padding;
+  final int maxAnimatedItems;
   
   const StaggeredListAnimation({
     super.key,
@@ -280,20 +285,27 @@ class StaggeredListAnimation extends StatelessWidget {
     this.itemDuration = const Duration(milliseconds: 300),
     this.staggerDelay = const Duration(milliseconds: 50),
     this.padding,
+    this.maxAnimatedItems = 10,
   });
   
   @override
   Widget build(BuildContext context) {
     return Column(
       children: List.generate(children.length, (index) {
-        return Padding(
+        final child = Padding(
           padding: padding ?? EdgeInsets.zero,
-          child: SlideInWidget.fromBottom(
+          child: children[index],
+        );
+        
+        // Animer uniquement les N premiers éléments
+        if (index < maxAnimatedItems) {
+          return SlideInWidget.fromBottom(
             duration: itemDuration,
             delay: staggerDelay * index,
-            child: children[index],
-          ),
-        );
+            child: child,
+          );
+        }
+        return child;
       }),
     );
   }

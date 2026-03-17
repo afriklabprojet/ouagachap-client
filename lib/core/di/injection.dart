@@ -74,10 +74,13 @@ Future<void> configureDependencies() async {
     () => ImageCompressionService(),
   );
   
-  // Deep Link Service
-  final deepLinkService = DeepLinkService();
-  await deepLinkService.initialize();
-  getIt.registerSingleton<DeepLinkService>(deepLinkService);
+  // Deep Link Service — initialisé en lazy pour ne pas bloquer le démarrage.
+  // L'initialisation se fait au premier accès (ex: HomePage).
+  getIt.registerLazySingleton<DeepLinkService>(() {
+    final service = DeepLinkService();
+    service.initialize(); // Fire-and-forget : l'écoute démarre en arrière-plan
+    return service;
+  });
   
   // App Review Service
   getIt.registerSingleton<AppReviewService>(
