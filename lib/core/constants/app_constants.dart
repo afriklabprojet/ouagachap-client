@@ -16,7 +16,7 @@ class AppConstants {
     if (kDebugMode) {
       return 'http://127.0.0.1:8000/api/v1';
     }
-    return 'https://api.ouagachap.bf/api/v1';
+    return 'https://ouagachap.com/api/v1';
   }
   
   /// URL WebSocket pour le suivi en temps réel (Laravel Reverb)
