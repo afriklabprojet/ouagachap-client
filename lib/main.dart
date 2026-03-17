@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,7 +10,6 @@ import 'core/router/app_router.dart';
 import 'core/di/injection.dart';
 import 'core/services/enhanced_notification_service.dart';
 import 'core/services/theme_service.dart';
-import 'core/widgets/network_aware_widgets.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
 import 'features/auth/presentation/bloc/auth_state.dart';
@@ -21,8 +23,45 @@ import 'features/incoming/presentation/bloc/incoming_order_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Configuration UI synchrone — ne bloque pas
+
+  // ── Error handlers globaux ───────────────────────────────────────
+  // En release, Flutter affiche un Container gris silencieux.
+  // On le remplace pour logger l'erreur et éviter l'écran gris.
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('❌ FlutterError: ${details.exceptionAsString()}');
+  };
+
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    // En release, afficher une UI de fallback au lieu du gris
+    if (kReleaseMode) {
+      return const MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.warning_amber_rounded, size: 64, color: Colors.orange),
+                  SizedBox(height: 16),
+                  Text(
+                    'Une erreur est survenue.\nRedémarrez l\'application.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    // En debug, garder le red screen normal
+    return ErrorWidget(details.exception);
+  };
+
+  // ── UI config synchrone ──────────────────────────────────────────
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -31,23 +70,27 @@ void main() async {
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
   ));
-  
-  // Initialiser UNIQUEMENT les dépendances critiques pour le premier frame
-  // (SharedPreferences, Dio, Repositories, BLoCs)
-  await configureDependencies();
-  
-  runApp(const OuagaChapApp());
-  
-  // Après le premier frame : initialiser les services non-critiques
-  // (Firebase Messaging, FCM Token, Notification Channels)
-  // Cela évite de bloquer l'affichage du splash pendant 3-8s sur 3G
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    _initDeferredServices();
+
+  // ── Démarrage dans une zone protégée ─────────────────────────────
+  runZonedGuarded(() async {
+    try {
+      await configureDependencies();
+    } catch (e, stack) {
+      debugPrint('❌ configureDependencies failed: $e\n$stack');
+    }
+
+    runApp(const OuagaChapApp());
+
+    // Services non-critiques après le premier frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initDeferredServices();
+    });
+  }, (error, stack) {
+    debugPrint('❌ Uncaught error: $error\n$stack');
   });
 }
 
 /// Services initialisés APRÈS le premier frame pour un démarrage rapide.
-/// Ces services ne sont pas nécessaires pour afficher le splash screen.
 Future<void> _initDeferredServices() async {
   try {
     await EnhancedFirebaseNotificationService().initialize();
@@ -87,9 +130,9 @@ class OuagaChapApp extends StatelessWidget {
         ),
       ],
       child: BlocListener<AuthBloc, AuthState>(
-        listenWhen: (prev, curr) => curr is AuthAuthenticated && prev is! AuthAuthenticated,
+        listenWhen: (prev, curr) =>
+            curr is AuthAuthenticated && prev is! AuthAuthenticated,
         listener: (context, state) {
-          // Charger le wallet seulement APRÈS l'authentification
           context.read<WalletBloc>().add(const LoadWallet());
         },
         child: ListenableBuilder(
@@ -103,11 +146,6 @@ class OuagaChapApp extends StatelessWidget {
               darkTheme: AppTheme.darkTheme,
               themeMode: themeService.themeMode,
               routerConfig: AppRouter.router,
-              builder: (context, child) {
-                return NetworkStatusWidget(
-                  child: child ?? const SizedBox.shrink(),
-                );
-              },
             );
           },
         ),

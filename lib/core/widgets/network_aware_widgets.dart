@@ -19,7 +19,7 @@ class NetworkStatusWidget extends StatefulWidget {
 
 class _NetworkStatusWidgetState extends State<NetworkStatusWidget>
     with SingleTickerProviderStateMixin {
-  late StreamSubscription<List<ConnectivityResult>> _subscription;
+  StreamSubscription<List<ConnectivityResult>>? _subscription;
   bool _isConnected = true;
   late AnimationController _animationController;
   late Animation<double> _slideAnimation;
@@ -35,20 +35,34 @@ class _NetworkStatusWidgetState extends State<NetworkStatusWidget>
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
     
-    _checkConnectivity();
-    _subscription = Connectivity().onConnectivityChanged.listen(_updateConnectionStatus);
+    _initConnectivity();
+  }
+  
+  /// Initialise la surveillance réseau dans un try-catch.
+  /// Sur certains appareils, Connectivity() lève un PlatformException
+  /// qui, en mode release, provoque un écran gris silencieux.
+  Future<void> _initConnectivity() async {
+    try {
+      final result = await Connectivity().checkConnectivity();
+      _updateConnectionStatus(result);
+    } catch (e) {
+      debugPrint('⚠️ Connectivity check failed: $e');
+    }
+    try {
+      _subscription = Connectivity().onConnectivityChanged.listen(
+        _updateConnectionStatus,
+        onError: (e) => debugPrint('⚠️ Connectivity stream error: $e'),
+      );
+    } catch (e) {
+      debugPrint('⚠️ Connectivity listen failed: $e');
+    }
   }
   
   @override
   void dispose() {
-    _subscription.cancel();
+    _subscription?.cancel();
     _animationController.dispose();
     super.dispose();
-  }
-  
-  Future<void> _checkConnectivity() async {
-    final result = await Connectivity().checkConnectivity();
-    _updateConnectionStatus(result);
   }
   
   void _updateConnectionStatus(List<ConnectivityResult> result) {
