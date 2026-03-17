@@ -41,38 +41,37 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBfVUEKM1KXrScddJ1kfYVoT0g0O4yPIys',
-    appId: '1:441145504200:web:86e6b752010969baa810fd',
-    messagingSenderId: '441145504200',
-    projectId: 'ouaga-chap',
-    authDomain: 'ouaga-chap.firebaseapp.com',
-    storageBucket: 'ouaga-chap.firebasestorage.app',
-    measurementId: 'G-68FRQ7MFZH',
+    apiKey: 'AIzaSyDT6eV9wiOEAqunalu7Oj6bsA-c5RvimEM',
+    appId: '1:464512136513:android:8668aa14c37fb4386bddc0',
+    messagingSenderId: '464512136513',
+    projectId: 'ouaga-chap-a888e',
+    authDomain: 'ouaga-chap-a888e.firebaseapp.com',
+    storageBucket: 'ouaga-chap-a888e.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBn46jriuNG9ve_yCmsUdb-g15yKc4uP_k',
-    appId: '1:441145504200:android:ffb86c7e6b888c86a810fd',
-    messagingSenderId: '441145504200',
-    projectId: 'ouaga-chap',
-    storageBucket: 'ouaga-chap.firebasestorage.app',
+    apiKey: 'AIzaSyDT6eV9wiOEAqunalu7Oj6bsA-c5RvimEM',
+    appId: '1:464512136513:android:8668aa14c37fb4386bddc0',
+    messagingSenderId: '464512136513',
+    projectId: 'ouaga-chap-a888e',
+    storageBucket: 'ouaga-chap-a888e.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBizlb0Hh25IgSVSOc17REX0Mao0dRq06M',
-    appId: '1:441145504200:ios:8baf96c91cf034f0a810fd',
-    messagingSenderId: '441145504200',
-    projectId: 'ouaga-chap',
-    storageBucket: 'ouaga-chap.firebasestorage.app',
+    apiKey: 'AIzaSyBueqG0lKCoUm--WidQYHJ2OI_DPY-QXMo',
+    appId: '1:464512136513:ios:4b6c7b6e3b5472706bddc0',
+    messagingSenderId: '464512136513',
+    projectId: 'ouaga-chap-a888e',
+    storageBucket: 'ouaga-chap-a888e.firebasestorage.app',
     iosBundleId: 'bf.ouagachap.ouagaChapClient',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyBizlb0Hh25IgSVSOc17REX0Mao0dRq06M',
-    appId: '1:441145504200:ios:8baf96c91cf034f0a810fd',
-    messagingSenderId: '441145504200',
-    projectId: 'ouaga-chap',
-    storageBucket: 'ouaga-chap.firebasestorage.app',
+    apiKey: 'AIzaSyBueqG0lKCoUm--WidQYHJ2OI_DPY-QXMo',
+    appId: '1:464512136513:ios:4b6c7b6e3b5472706bddc0',
+    messagingSenderId: '464512136513',
+    projectId: 'ouaga-chap-a888e',
+    storageBucket: 'ouaga-chap-a888e.firebasestorage.app',
     iosBundleId: 'bf.ouagachap.ouagaChapClient',
   );
 }
