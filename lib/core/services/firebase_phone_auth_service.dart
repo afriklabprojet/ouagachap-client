@@ -13,6 +13,28 @@ class FirebasePhoneAuthService {
   /// Obtenir l'ID de vérification actuel
   String? get verificationId => _verificationId;
   
+  /// Normaliser le numéro de téléphone au format E.164 (+226XXXXXXXX)
+  String _normalizePhoneNumber(String phone) {
+    // Supprimer espaces et tirets
+    phone = phone.replaceAll(RegExp(r'[\s\-]'), '');
+    
+    // Si déjà au format international, retourner tel quel
+    if (phone.startsWith('+')) return phone;
+    
+    // Si commence par 00226, remplacer par +226
+    if (phone.startsWith('00226')) {
+      return '+${phone.substring(2)}';
+    }
+    
+    // Si commence par 226, ajouter +
+    if (phone.startsWith('226') && phone.length > 10) {
+      return '+$phone';
+    }
+    
+    // Sinon, ajouter le préfixe Burkina Faso +226
+    return '+226$phone';
+  }
+
   /// Envoyer un code OTP par SMS
   /// Retourne un Future qui complète quand le code est envoyé
   Future<PhoneAuthResult> sendOtp({
@@ -21,9 +43,13 @@ class FirebasePhoneAuthService {
   }) async {
     final completer = Completer<PhoneAuthResult>();
     
+    // Normaliser le numéro au format E.164 pour Firebase
+    final normalizedPhone = _normalizePhoneNumber(phoneNumber);
+    debugPrint('📱 Firebase Phone Auth: Envoi OTP vers $normalizedPhone (original: $phoneNumber)');
+    
     try {
       await _auth.verifyPhoneNumber(
-        phoneNumber: phoneNumber,
+        phoneNumber: normalizedPhone,
         timeout: timeout,
         forceResendingToken: _resendToken,
         

@@ -25,6 +25,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   // Service Firebase Phone Auth
   final FirebasePhoneAuthService _firebasePhoneAuth = FirebasePhoneAuthService();
   
+  /// Indique si Firebase a réussi à envoyer le SMS OTP
+  bool _firebaseOtpSent = false;
+  
   // Firebase Phone Auth uniquement sur mobile (Android/iOS)
   // Sur web, on utilise le backend mock car reCAPTCHA est complexe à configurer
   bool get useFirebasePhoneAuth {
@@ -82,6 +85,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       
       // Puis envoyer le SMS via Firebase si activé
+      _firebaseOtpSent = false;
       if (useFirebasePhoneAuth) {
         final result = await _firebasePhoneAuth.sendOtp(phoneNumber: event.phone);
         
@@ -91,9 +95,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           return;
         }
         
-        if (!result.success) {
-          emit(AuthError(message: result.message));
-          return;
+        if (result.success) {
+          _firebaseOtpSent = true;
+        } else {
+          // Firebase a échoué - continuer avec le SMS backup envoyé par le serveur
+          debugPrint('⚠️ Firebase Phone Auth échoué: ${result.message} (code: ${result.errorCode})');
+          debugPrint('📱 Fallback vers SMS backup du serveur');
+          _firebaseOtpSent = false;
+          // Ne PAS bloquer - le serveur a déjà envoyé un SMS backup
         }
       }
       
@@ -114,6 +123,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await loginUseCase(phone: event.phone);
       
       // Puis envoyer le SMS via Firebase si activé
+      _firebaseOtpSent = false;
       if (useFirebasePhoneAuth) {
         final result = await _firebasePhoneAuth.sendOtp(phoneNumber: event.phone);
         
@@ -123,9 +133,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           return;
         }
         
-        if (!result.success) {
-          emit(AuthError(message: result.message));
-          return;
+        if (result.success) {
+          _firebaseOtpSent = true;
+        } else {
+          // Firebase a échoué - continuer avec le SMS backup envoyé par le serveur
+          debugPrint('⚠️ Firebase Phone Auth échoué: ${result.message} (code: ${result.errorCode})');
+          debugPrint('📱 Fallback vers SMS backup du serveur');
+          _firebaseOtpSent = false;
+          // Ne PAS bloquer - le serveur a déjà envoyé un SMS backup
         }
       }
       
@@ -144,8 +159,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       String? firebaseIdToken;
       
-      // Vérifier le code OTP via Firebase si activé
-      if (useFirebasePhoneAuth) {
+      // Vérifier le code OTP via Firebase SEULEMENT si Firebase a envoyé le SMS
+      if (useFirebasePhoneAuth && _firebaseOtpSent) {
         final firebaseResult = await _firebasePhoneAuth.verifyOtp(otp: event.otp);
         
         if (!firebaseResult.success) {
