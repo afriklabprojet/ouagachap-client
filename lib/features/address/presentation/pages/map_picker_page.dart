@@ -125,7 +125,19 @@ class _MapPickerPageState extends State<MapPickerPage> {
       }
 
       if (permission == LocationPermission.deniedForever) {
-        _showError('Activez la localisation dans les paramètres');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Activez la localisation dans les paramètres'),
+            backgroundColor: AppColors.error,
+            action: SnackBarAction(
+              label: 'OUVRIR',
+              textColor: Colors.white,
+              onPressed: () => Geolocator.openAppSettings(),
+            ),
+            duration: const Duration(seconds: 5),
+          ),
+        );
         return;
       }
 

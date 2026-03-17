@@ -1,6 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+/// Formateur de numéro de téléphone Burkina Faso (XX XX XX XX)
+/// Utilisé par login_page et register_page — source unique de vérité.
+class PhoneNumberFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final text = newValue.text.replaceAll(' ', '');
+    final buffer = StringBuffer();
+
+    for (int i = 0; i < text.length; i++) {
+      if (i > 0 && i % 2 == 0) {
+        buffer.write(' ');
+      }
+      buffer.write(text[i]);
+    }
+
+    return TextEditingValue(
+      text: buffer.toString(),
+      selection: TextSelection.collapsed(offset: buffer.length),
+    );
+  }
+}
+
 /// Validateurs de formulaire réutilisables
 class FormValidators {
   FormValidators._();

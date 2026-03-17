@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/form_validators.dart';
 import '../../../../core/widgets/animations.dart';
 import '../../../../core/widgets/custom_buttons.dart';
 import '../bloc/auth_bloc.dart';
@@ -156,7 +157,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
                       LengthLimitingTextInputFormatter(8),
-                      _PhoneNumberFormatter(),
+                      PhoneNumberFormatter(),
                     ],
                     decoration: InputDecoration(
                       labelText: 'Numéro de téléphone',
@@ -195,6 +196,14 @@ class _RegisterPageState extends State<RegisterPage> {
                       final digits = value.replaceAll(' ', '');
                       if (digits.length != 8) {
                         return 'Le numéro doit contenir 8 chiffres';
+                      }
+                      // Vérifier les préfixes valides au Burkina Faso
+                      final prefix = digits.substring(0, 2);
+                      const validPrefixes = ['50','51','52','53','54','55','56','57','58',
+                                             '60','61','62','63','64','65','66','67','68','69',
+                                             '70','71','72','73','74','75','76','77','78','79'];
+                      if (!validPrefixes.contains(prefix)) {
+                        return 'Préfixe invalide. Utilisez un numéro Burkina Faso';
                       }
                       return null;
                     },
@@ -265,29 +274,6 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _PhoneNumberFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final text = newValue.text.replaceAll(' ', '');
-    final buffer = StringBuffer();
-
-    for (int i = 0; i < text.length; i++) {
-      if (i > 0 && i % 2 == 0) {
-        buffer.write(' ');
-      }
-      buffer.write(text[i]);
-    }
-
-    return TextEditingValue(
-      text: buffer.toString(),
-      selection: TextSelection.collapsed(offset: buffer.length),
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/widgets/animations.dart';
 import '../../../../core/widgets/cards.dart';
 import '../../data/datasources/jeko_payment_datasource.dart';
@@ -360,7 +361,7 @@ class _RechargePageState extends State<RechargePage> {
                       const Icon(Icons.lock, color: Colors.white, size: 18),
                       const SizedBox(width: 8),
                       Text(
-                        'Payer $_selectedAmount FCFA',
+                        'Payer ${formatCFA(_selectedAmount)}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,

@@ -1,6 +1,7 @@
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/utils/error_helpers.dart';
 import '../../data/repositories/promo_repository.dart';
 import 'promo_event.dart';
 import 'promo_state.dart';
@@ -28,7 +29,7 @@ class PromoBloc extends Bloc<PromoEvent, PromoState> {
       if (isClosed) return;
       emit(state.copyWith(
         status: PromoStatus.error,
-        errorMessage: e.toString(),
+        errorMessage: extractUserFriendlyError(e),
       ));
     }
   }
@@ -50,7 +51,7 @@ class PromoBloc extends Bloc<PromoEvent, PromoState> {
       if (isClosed) return;
       emit(state.copyWith(
         isValidating: false,
-        errorMessage: e.toString(),
+        errorMessage: extractUserFriendlyError(e),
       ));
     }
   }
@@ -71,7 +72,7 @@ class PromoBloc extends Bloc<PromoEvent, PromoState> {
       if (isClosed) return;
       emit(state.copyWith(
         isValidating: false,
-        errorMessage: e.toString(),
+        errorMessage: extractUserFriendlyError(e),
       ));
     }
   }

@@ -64,28 +64,42 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
     }
 
     // Vérifier l'authentification via le use case directement
-    final getCurrentUserUseCase = getIt<GetCurrentUserUseCase>();
-    final user = await getCurrentUserUseCase();
-    
-    if (!mounted) return;
-    
-    if (user != null) {
-      // Vérifier que l'utilisateur est un client
-      if (!user.isClient) {
-        debugPrint('⚠️ Utilisateur n\'est pas un client (role: ${user.role}), déconnexion...');
-        // Déconnecter l'utilisateur non-client
-        try {
-          final logoutUseCase = getIt<LogoutUseCase>();
-          await logoutUseCase();
-        } catch (_) {}
-        if (mounted) context.go(Routes.login);
-        return;
+    try {
+      final getCurrentUserUseCase = getIt<GetCurrentUserUseCase>();
+      final user = await getCurrentUserUseCase();
+      
+      if (!mounted) return;
+      
+      if (user != null) {
+        // Vérifier que l'utilisateur est un client
+        if (!user.isClient) {
+          debugPrint('⚠️ Utilisateur n\'est pas un client (role: ${user.role}), déconnexion...');
+          // Déconnecter l'utilisateur non-client
+          try {
+            final logoutUseCase = getIt<LogoutUseCase>();
+            await logoutUseCase();
+          } catch (_) {}
+          if (mounted) context.go(Routes.login);
+          return;
+        }
+        debugPrint('➡️ Utilisateur client connecté, navigation vers home');
+        context.go(Routes.home);
+      } else {
+        debugPrint('➡️ Pas d\'utilisateur, navigation vers login');
+        context.go(Routes.login);
       }
-      debugPrint('➡️ Utilisateur client connecté, navigation vers home');
-      context.go(Routes.home);
-    } else {
-      debugPrint('➡️ Pas d\'utilisateur, navigation vers login');
-      context.go(Routes.login);
+    } catch (e) {
+      debugPrint('⚠️ Erreur vérification auth au splash: $e');
+      // En cas d'erreur réseau, vérifier si un token existe localement
+      if (!mounted) return;
+      final prefs = getIt<SharedPreferences>();
+      final token = prefs.getString('auth_token');
+      if (token != null && token.isNotEmpty) {
+        // Token local trouvé → tenter d'aller à home (le token sera validé aux prochains appels)
+        context.go(Routes.home);
+      } else {
+        context.go(Routes.login);
+      }
     }
   }
 

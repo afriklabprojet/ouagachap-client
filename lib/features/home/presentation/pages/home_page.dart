@@ -9,6 +9,7 @@ import '../../../../core/router/app_router.dart';
 import '../../../../core/services/changelog_service.dart';
 import '../../../../core/services/deep_link_service.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/widgets/animations.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -19,6 +20,7 @@ import '../../../order/presentation/bloc/order_bloc.dart';
 import '../../../order/presentation/bloc/order_event.dart';
 import '../../../order/presentation/bloc/order_state.dart';
 import '../../../wallet/presentation/bloc/wallet_bloc.dart';
+import '../../../wallet/presentation/bloc/wallet_event.dart';
 import '../../../wallet/presentation/bloc/wallet_state.dart';
 import '../widgets/active_order_card.dart';
 
@@ -144,6 +146,10 @@ class _HomePageState extends State<HomePage> {
         child: RefreshIndicator(
           onRefresh: () async {
             context.read<OrderBloc>().add(const GetOrdersRequested(refresh: true));
+            context.read<WalletBloc>().add(const LoadWallet());
+            context.read<NotificationBloc>().add(const LoadNotifications());
+            // Attendre un délai minimum pour que le spinner soit visible
+            await Future.delayed(const Duration(milliseconds: 800));
           },
           child: CustomScrollView(
             slivers: [
@@ -396,7 +402,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '$balance FCFA',
+                        formatCFA(balance),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 28,
@@ -1024,7 +1030,16 @@ class _HomePageState extends State<HomePage> {
             ],
           );
         }
-        return const Center(child: CircularProgressIndicator());
+        // Afficher un spinner UNIQUEMENT pendant le chargement initial,
+        // pas pour OrderCreated, OrderError, PriceCalculated, etc.
+        if (state is OrderLoading) {
+          return const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        // Pour tout autre état (OrderCreated, OrderError, etc.), ne rien afficher
+        return const SizedBox.shrink();
       },
     );
   }

@@ -1,5 +1,6 @@
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/utils/error_helpers.dart';
 import '../../domain/usecases/get_notifications_usecase.dart';
 import '../../domain/usecases/mark_notification_read_usecase.dart';
 import 'notification_event.dart';
@@ -36,7 +37,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
       ));
     } catch (e) {
       if (isClosed) return;
-      emit(NotificationError(e.toString()));
+      emit(NotificationError(extractUserFriendlyError(e)));
     }
   }
 

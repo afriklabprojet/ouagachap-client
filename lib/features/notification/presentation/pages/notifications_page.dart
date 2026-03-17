@@ -171,7 +171,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   String _formatDate(DateTime date) {
-    // Simple formatter, you might want to use intl package
-    return "${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}";
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+    return "$day/$month/${date.year} $hour:$minute";
   }
 }

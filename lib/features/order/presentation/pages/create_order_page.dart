@@ -43,14 +43,18 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
   final _packageDescriptionController = TextEditingController();
   String _selectedPackageSize = 'small';
 
-  // Mock coordinates (Ouagadougou)
+  // Coordonnées par défaut (centre Ouagadougou) — DOIVENT être
+  // remplacées via le map picker pour que la commande soit valide.
   double _pickupLatitude = 12.3714;
   double _pickupLongitude = -1.5197;
   double _deliveryLatitude = 12.3814;
   double _deliveryLongitude = -1.5097;
+  bool _pickupCoordsSet = false;
+  bool _deliveryCoordsSet = false;
 
   double _estimatedPrice = 0;
   double _estimatedDistance = 0;
+  bool _orderCreated = false;
 
   @override
   void dispose() {
@@ -97,10 +101,18 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
           _showError('Veuillez entrer l\'adresse de récupération');
           return false;
         }
+        if (!_pickupCoordsSet) {
+          _showError('Veuillez sélectionner l\'adresse sur la carte pour une localisation précise');
+          return false;
+        }
         return true;
       case 1:
         if (_deliveryAddressController.text.isEmpty) {
           _showError('Veuillez entrer l\'adresse de livraison');
+          return false;
+        }
+        if (!_deliveryCoordsSet) {
+          _showError('Veuillez sélectionner l\'adresse de livraison sur la carte');
           return false;
         }
         if (_recipientNameController.text.isEmpty) {
@@ -109,6 +121,11 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
         }
         if (_recipientPhoneController.text.isEmpty) {
           _showError('Veuillez entrer le téléphone du destinataire');
+          return false;
+        }
+        final digits = _recipientPhoneController.text.replaceAll(' ', '');
+        if (digits.length != 8) {
+          _showError('Le numéro du destinataire doit contenir 8 chiffres');
           return false;
         }
         return true;
@@ -127,7 +144,10 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
   }
 
   void _submitOrder() {
-    final phone = '+226${_recipientPhoneController.text.replaceAll(' ', '')}';
+    if (_orderCreated) return; // Empêcher la re-soumission
+    
+    final rawPhone = _recipientPhoneController.text.replaceAll(' ', '');
+    final phone = rawPhone.startsWith('+226') ? rawPhone : '+226$rawPhone';
     
     context.read<OrderBloc>().add(CreateOrderRequested(
           pickupAddress: _pickupAddressController.text,
@@ -138,7 +158,10 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
               : _pickupContactNameController.text,
           pickupContactPhone: _pickupContactPhoneController.text.isEmpty
               ? null
-              : '+226${_pickupContactPhoneController.text.replaceAll(' ', '')}',
+              : () {
+                  final raw = _pickupContactPhoneController.text.replaceAll(' ', '');
+                  return raw.startsWith('+226') ? raw : '+226$raw';
+                }(),
           deliveryAddress: _deliveryAddressController.text,
           deliveryLatitude: _deliveryLatitude,
           deliveryLongitude: _deliveryLongitude,
@@ -167,6 +190,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
             _estimatedDistance = state.distance;
           });
         } else if (state is OrderCreated) {
+          _orderCreated = true;
           // Afficher l'animation de succès
           AnimatedSuccessDialog.show(
             context,
@@ -503,6 +527,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
               prefixIcon: Icon(Icons.inventory_2_outlined),
             ),
             maxLines: 2,
+            maxLength: 200,
           ),
           const SizedBox(height: 16),
           const Text('Taille du colis'),
@@ -901,10 +926,12 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
               _pickupAddressController.text = address.address;
               _pickupLatitude = address.latitude;
               _pickupLongitude = address.longitude;
+              _pickupCoordsSet = true;
             } else {
               _deliveryAddressController.text = address.address;
               _deliveryLatitude = address.latitude;
               _deliveryLongitude = address.longitude;
+              _deliveryCoordsSet = true;
             }
           });
           Navigator.pop(context);
@@ -1008,10 +1035,12 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
           _pickupLatitude = result['latitude'];
           _pickupLongitude = result['longitude'];
           _pickupAddressController.text = result['address'];
+          _pickupCoordsSet = true;
         } else {
           _deliveryLatitude = result['latitude'];
           _deliveryLongitude = result['longitude'];
           _deliveryAddressController.text = result['address'];
+          _deliveryCoordsSet = true;
         }
       });
 

@@ -1,5 +1,6 @@
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/utils/error_helpers.dart';
 import '../../data/repositories/address_repository.dart';
 import '../../domain/entities/saved_address.dart';
 import 'address_event.dart';
@@ -32,7 +33,7 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
     } catch (e) {
       emit(state.copyWith(
         status: AddressStatus.error,
-        errorMessage: e.toString(),
+        errorMessage: extractUserFriendlyError(e),
       ));
     }
   }
@@ -75,7 +76,7 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
     } catch (e) {
       emit(state.copyWith(
         isCreating: false,
-        errorMessage: e.toString(),
+        errorMessage: extractUserFriendlyError(e),
       ));
     }
   }
@@ -122,7 +123,7 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
     } catch (e) {
       emit(state.copyWith(
         isCreating: false,
-        errorMessage: e.toString(),
+        errorMessage: extractUserFriendlyError(e),
       ));
     }
   }
@@ -157,7 +158,7 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
       if (isClosed) return;
       emit(state.copyWith(
         isDeleting: false,
-        errorMessage: e.toString(),
+        errorMessage: extractUserFriendlyError(e),
       ));
     }
   }
@@ -176,7 +177,7 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
 
       emit(state.copyWith(addresses: updatedAddresses));
     } catch (e) {
-      emit(state.copyWith(errorMessage: e.toString()));
+      emit(state.copyWith(errorMessage: extractUserFriendlyError(e)));
     }
   }
 }

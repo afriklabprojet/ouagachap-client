@@ -178,37 +178,51 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
       
+      // Écouter le résultat du BLoC avant d'afficher le succès
+      final bloc = context.read<AuthBloc>();
+      
+      // Envoyer l'événement
+      bloc.add(UpdateProfileRequested(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
+        avatarFile: _selectedImage,
+        avatarBytes: _selectedImageBytes,
+      ));
+      
+      // Attendre la prochaine émission du BLoC (succès ou erreur)
       try {
-        // Mettre à jour le profil via le BLoC
-        context.read<AuthBloc>().add(UpdateProfileRequested(
-          name: _nameController.text.trim(),
-          email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
-          avatarFile: _selectedImage,
-          avatarBytes: _selectedImageBytes,
-        ));
+        final resultState = await bloc.stream.firstWhere(
+          (state) => state is AuthAuthenticated || state is AuthError,
+        ).timeout(const Duration(seconds: 15));
         
-        // Attendre un peu pour le feedback visuel
-        await Future.delayed(const Duration(milliseconds: 500));
+        if (!mounted) return;
+        setState(() => _isLoading = false);
         
+        if (resultState is AuthError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(resultState.message),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profil mis à jour avec succès !'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          context.go(Routes.profile);
+        }
+      } catch (e) {
         if (!mounted) return;
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Profil mis à jour avec succès !'),
-            backgroundColor: AppColors.success,
+            content: Text('La mise à jour a pris trop de temps. Vérifiez votre connexion.'),
+            backgroundColor: AppColors.error,
           ),
         );
-        context.go(Routes.profile);
-      } catch (e) {
-        if (mounted) {
-          setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erreur: $e'),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        }
       }
     }
   }

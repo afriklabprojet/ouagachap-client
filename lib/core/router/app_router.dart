@@ -137,7 +137,13 @@ class AppRouter {
         path: '${Routes.liveTracking}/:orderId',
         name: Routes.liveTracking,
         builder: (context, state) {
-          final orderId = int.parse(state.pathParameters['orderId']!);
+          final orderId = int.tryParse(state.pathParameters['orderId'] ?? '') ?? 0;
+          if (orderId == 0) {
+            // ID invalide — rediriger vers l'accueil
+            return const Scaffold(
+              body: Center(child: Text('Commande introuvable')),
+            );
+          }
           final trackingCode = state.uri.queryParameters['tracking'] ?? '';
           final courierName = state.uri.queryParameters['courierName'];
           final courierPhone = state.uri.queryParameters['courierPhone'];

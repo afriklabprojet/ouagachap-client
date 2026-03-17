@@ -1,5 +1,6 @@
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/utils/error_helpers.dart';
 import '../../domain/repositories/wallet_repository.dart';
 import 'wallet_event.dart';
 import 'wallet_state.dart';
@@ -25,7 +26,7 @@ class WalletBloc extends Bloc<WalletEvent, WalletState> {
       emit(WalletLoaded(wallet: wallet));
     } catch (e) {
       if (isClosed) return;
-      emit(WalletError(message: e.toString()));
+      emit(WalletError(message: extractUserFriendlyError(e)));
     }
   }
 

@@ -7,8 +7,10 @@ import 'core/router/app_router.dart';
 import 'core/di/injection.dart';
 import 'core/services/enhanced_notification_service.dart';
 import 'core/services/theme_service.dart';
+import 'core/widgets/network_aware_widgets.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
+import 'features/auth/presentation/bloc/auth_state.dart';
 import 'features/order/presentation/bloc/order_bloc.dart';
 import 'features/notification/presentation/bloc/notification_bloc.dart';
 import 'features/wallet/presentation/bloc/wallet_bloc.dart';
@@ -72,7 +74,7 @@ class OuagaChapApp extends StatelessWidget {
           create: (_) => getIt<NotificationBloc>(),
         ),
         BlocProvider<WalletBloc>(
-          create: (_) => getIt<WalletBloc>()..add(const LoadWallet()),
+          create: (_) => getIt<WalletBloc>(),
         ),
         BlocProvider<SupportBloc>(
           create: (_) => getIt<SupportBloc>(),
@@ -84,19 +86,28 @@ class OuagaChapApp extends StatelessWidget {
           create: (_) => getIt<JekoPaymentBloc>(),
         ),
       ],
-      child: ListenableBuilder(
-        listenable: getIt<ThemeService>(),
-        builder: (context, _) {
-          final themeService = getIt<ThemeService>();
-          return MaterialApp.router(
-            title: 'OUAGA CHAP',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeService.themeMode,
-            routerConfig: AppRouter.router,
-          );
+      child: BlocListener<AuthBloc, AuthState>(
+        listenWhen: (prev, curr) => curr is AuthAuthenticated && prev is! AuthAuthenticated,
+        listener: (context, state) {
+          // Charger le wallet seulement APRÈS l'authentification
+          context.read<WalletBloc>().add(const LoadWallet());
         },
+        child: ListenableBuilder(
+          listenable: getIt<ThemeService>(),
+          builder: (context, _) {
+            final themeService = getIt<ThemeService>();
+            return NetworkStatusWidget(
+              child: MaterialApp.router(
+                title: 'OUAGA CHAP',
+                debugShowCheckedModeBanner: false,
+                theme: AppTheme.lightTheme,
+                darkTheme: AppTheme.darkTheme,
+                themeMode: themeService.themeMode,
+                routerConfig: AppRouter.router,
+              ),
+            );
+          },
+        ),
       ),
     );
   }

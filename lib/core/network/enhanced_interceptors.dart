@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:developer' as dev;
 import 'package:dio/dio.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../router/app_router.dart';
 import 'api_error.dart';
 
 /// Intercepteur amélioré avec retry automatique et logging
@@ -51,6 +53,11 @@ class EnhancedApiInterceptor extends Interceptor {
     // Gérer les erreurs d'authentification (401)
     if (err.response?.statusCode == 401) {
       await _prefs.remove(_tokenKey);
+      // Rediriger vers login via le router global
+      try {
+        final router = _findRouter();
+        router?.go('/login');
+      } catch (_) {}
       return handler.reject(err);
     }
     
@@ -88,6 +95,15 @@ class EnhancedApiInterceptor extends Interceptor {
            (err.response?.statusCode != null && 
             err.response!.statusCode! >= 500 && 
             err.response!.statusCode! < 600);
+  }
+
+  /// Accède au GoRouter global pour une redirection 401 → login
+  GoRouter? _findRouter() {
+    try {
+      return AppRouter.router;
+    } catch (_) {
+      return null;
+    }
   }
 
   void _logRequest(RequestOptions options) {

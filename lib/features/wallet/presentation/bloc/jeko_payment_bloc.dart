@@ -1,5 +1,6 @@
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/utils/error_helpers.dart';
 import '../../data/repositories/jeko_payment_repository.dart';
 import 'jeko_payment_event.dart';
 import 'jeko_payment_state.dart';
@@ -37,7 +38,7 @@ class JekoPaymentBloc extends Bloc<JekoPaymentEvent, JekoPaymentState> {
     } catch (e) {
       emit(state.copyWith(
         status: JekoPaymentStatus.error,
-        errorMessage: e.toString(),
+        errorMessage: extractUserFriendlyError(e),
       ));
     }
   }
@@ -72,7 +73,7 @@ class JekoPaymentBloc extends Bloc<JekoPaymentEvent, JekoPaymentState> {
     } catch (e) {
       emit(state.copyWith(
         status: JekoPaymentStatus.error,
-        errorMessage: e.toString(),
+        errorMessage: extractUserFriendlyError(e),
       ));
     }
   }
@@ -107,7 +108,7 @@ class JekoPaymentBloc extends Bloc<JekoPaymentEvent, JekoPaymentState> {
     } catch (e) {
       emit(state.copyWith(
         status: JekoPaymentStatus.error,
-        errorMessage: e.toString(),
+        errorMessage: extractUserFriendlyError(e),
       ));
     }
   }
@@ -130,7 +131,7 @@ class JekoPaymentBloc extends Bloc<JekoPaymentEvent, JekoPaymentState> {
     } catch (e) {
       emit(state.copyWith(
         status: JekoPaymentStatus.error,
-        errorMessage: e.toString(),
+        errorMessage: extractUserFriendlyError(e),
       ));
     }
   }
@@ -163,7 +164,7 @@ class JekoPaymentBloc extends Bloc<JekoPaymentEvent, JekoPaymentState> {
     } catch (e) {
       emit(state.copyWith(
         status: JekoPaymentStatus.error,
-        errorMessage: e.toString(),
+        errorMessage: extractUserFriendlyError(e),
       ));
     }
   }
@@ -186,7 +187,7 @@ class JekoPaymentBloc extends Bloc<JekoPaymentEvent, JekoPaymentState> {
     } catch (e) {
       emit(state.copyWith(
         status: JekoPaymentStatus.error,
-        errorMessage: e.toString(),
+        errorMessage: extractUserFriendlyError(e),
       ));
     }
   }

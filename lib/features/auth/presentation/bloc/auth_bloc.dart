@@ -307,11 +307,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     
     try {
       // Demander au backend de renvoyer (pour mise à jour des logs)
-      if (event.isLogin) {
-        await loginUseCase(phone: event.phone);
-      } else {
-        await loginUseCase(phone: event.phone);
-      }
+      // loginUseCase re-déclenche l'envoi OTP côté backend pour les 2 cas
+      // (login et register) car l'utilisateur existe déjà après l'inscription initiale
+      await loginUseCase(phone: event.phone);
       if (isClosed) return;
       
       // Renvoyer le SMS via Firebase si activé
@@ -456,7 +454,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     } catch (e) {
       debugPrint('Erreur mise à jour profil: $e');
-      // Ne pas changer l'état en cas d'erreur, juste log
+      if (isClosed) return;
+      emit(AuthError(message: _extractErrorMessage(e)));
     }
   }
 }
