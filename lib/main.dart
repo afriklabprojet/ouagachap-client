@@ -1,9 +1,12 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'firebase_options.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
@@ -33,32 +36,8 @@ void main() async {
   };
 
   ErrorWidget.builder = (FlutterErrorDetails details) {
-    // En release, afficher une UI de fallback au lieu du gris
-    if (kReleaseMode) {
-      return const MaterialApp(
-        home: Scaffold(
-          body: Center(
-            child: Padding(
-              padding: EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.warning_amber_rounded, size: 64, color: Colors.orange),
-                  SizedBox(height: 16),
-                  Text(
-                    'Une erreur est survenue.\nRedémarrez l\'application.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-    // En debug, garder le red screen normal
-    return ErrorWidget(details.exception);
+    debugPrint('❌ ErrorWidget: ${details.exceptionAsString()}');
+    return const SizedBox.shrink();
   };
 
   // ── UI config synchrone ──────────────────────────────────────────
@@ -73,6 +52,15 @@ void main() async {
 
   // ── Démarrage dans une zone protégée ─────────────────────────────
   runZonedGuarded(() async {
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      debugPrint('✅ Firebase initialisé');
+    } catch (e, stack) {
+      debugPrint('❌ Firebase.initializeApp failed: $e\n$stack');
+    }
+
     try {
       await configureDependencies();
     } catch (e, stack) {
