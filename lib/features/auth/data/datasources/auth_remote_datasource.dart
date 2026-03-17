@@ -13,7 +13,7 @@ abstract class AuthRemoteDataSource {
   Future<Map<String, dynamic>> verifyOtp({
     required String phone,
     required String otp,
-    bool firebaseVerified = false,
+    String? firebaseIdToken,
   });
   
   Future<UserModel> getCurrentUser();
@@ -60,15 +60,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<Map<String, dynamic>> verifyOtp({
     required String phone,
     required String otp,
-    bool firebaseVerified = false,
+    String? firebaseIdToken,
   }) async {
     final response = await _apiClient.post(
       'auth/otp/verify',
       data: {
         'phone': phone,
-        'code': otp, // L'API attend 'code' pas 'otp'
-        'app_type': 'client', // Identifier cette app comme client
-        if (firebaseVerified) 'firebase_verified': true,
+        'code': otp,
+        'app_type': 'client',
+        if (firebaseIdToken != null) 'firebase_id_token': firebaseIdToken,
       },
     );
     

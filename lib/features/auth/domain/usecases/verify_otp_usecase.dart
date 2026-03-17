@@ -9,13 +9,12 @@ class VerifyOtpUseCase {
   Future<User> call({
     required String phone,
     required String otp,
-    bool firebaseVerified = false,
     String? firebaseIdToken,
   }) async {
     return await _repository.verifyOtp(
       phone: phone, 
-      otp: firebaseIdToken ?? otp, // Si token Firebase, l'envoyer comme code
-      firebaseVerified: firebaseVerified || firebaseIdToken != null,
+      otp: otp,
+      firebaseIdToken: firebaseIdToken,
     );
   }
 }

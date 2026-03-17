@@ -15,7 +15,7 @@ abstract class AuthRepository {
   Future<User> verifyOtp({
     required String phone,
     required String otp,
-    bool firebaseVerified = false,
+    String? firebaseIdToken,
   });
 
   /// Récupérer l'utilisateur connecté

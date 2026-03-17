@@ -35,12 +35,12 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<User> verifyOtp({
     required String phone,
     required String otp,
-    bool firebaseVerified = false,
+    String? firebaseIdToken,
   }) async {
     final response = await remoteDataSource.verifyOtp(
       phone: phone,
       otp: otp,
-      firebaseVerified: firebaseVerified,
+      firebaseIdToken: firebaseIdToken,
     );
 
     // La réponse API est: { success, message, data: { user, token } }
