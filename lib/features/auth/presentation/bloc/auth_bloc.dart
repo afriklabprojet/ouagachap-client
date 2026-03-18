@@ -429,20 +429,34 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (event.email != null) 'email': event.email,
       };
       
-      // Ajouter l'avatar si présent (utiliser les bytes pour le web)
+      // Ajouter l'avatar si présent
       if (event.avatarBytes != null && event.avatarFile != null) {
-        formDataMap['avatar'] = MultipartFile.fromBytes(
-          event.avatarBytes!,
-          filename: event.avatarFile!.name,
-        );
+        final filename = event.avatarFile!.name;
+        final ext = filename.split('.').last.toLowerCase();
+        final mimeType = ext == 'png' ? 'image/png' : 'image/jpeg';
+        
+        if (kIsWeb) {
+          formDataMap['avatar'] = MultipartFile.fromBytes(
+            event.avatarBytes!,
+            filename: filename,
+            contentType: DioMediaType.parse(mimeType),
+          );
+        } else {
+          formDataMap['avatar'] = await MultipartFile.fromFile(
+            event.avatarFile!.path,
+            filename: filename,
+            contentType: DioMediaType.parse(mimeType),
+          );
+        }
       }
       
       final formData = FormData.fromMap(formDataMap);
 
-      // Envoyer la requête
+      // Envoyer la requête avec Content-Type multipart/form-data explicite
       await apiClient.post(
         'user/profile',
         data: formData,
+        options: Options(contentType: 'multipart/form-data'),
       );
       if (isClosed) return;
 
