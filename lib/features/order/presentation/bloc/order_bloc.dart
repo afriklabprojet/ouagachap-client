@@ -58,6 +58,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         recipientPhone: event.recipientPhone,
         packageDescription: event.packageDescription,
         packageSize: event.packageSize,
+        paymentMethod: event.paymentMethod,
       );
       emit(OrderCreated(order: order));
     } catch (e) {

@@ -21,6 +21,7 @@ class CreateOrderRequested extends OrderEvent {
   final String recipientPhone;
   final String? packageDescription;
   final String? packageSize;
+  final String paymentMethod;
 
   const CreateOrderRequested({
     required this.pickupAddress,
@@ -35,6 +36,7 @@ class CreateOrderRequested extends OrderEvent {
     required this.recipientPhone,
     this.packageDescription,
     this.packageSize,
+    this.paymentMethod = 'cash',
   });
 
   @override
@@ -43,6 +45,7 @@ class CreateOrderRequested extends OrderEvent {
         deliveryAddress,
         recipientName,
         recipientPhone,
+        paymentMethod,
       ];
 }
 

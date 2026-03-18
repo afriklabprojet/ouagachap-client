@@ -16,6 +16,7 @@ abstract class OrderRemoteDataSource {
     required String recipientPhone,
     String? packageDescription,
     String? packageSize,
+    String paymentMethod = 'cash',
   });
 
   Future<List<OrderModel>> getOrders({
@@ -62,6 +63,7 @@ class OrderRemoteDataSourceImpl implements OrderRemoteDataSource {
     required String recipientPhone,
     String? packageDescription,
     String? packageSize,
+    String paymentMethod = 'cash',
   }) async {
     final response = await _apiClient.post(
       'orders',
@@ -69,15 +71,16 @@ class OrderRemoteDataSourceImpl implements OrderRemoteDataSource {
         'pickup_address': pickupAddress,
         'pickup_latitude': pickupLatitude,
         'pickup_longitude': pickupLongitude,
-        if (pickupContactName != null) 'pickup_contact_name': pickupContactName,
-        if (pickupContactPhone != null) 'pickup_contact_phone': pickupContactPhone,
-        'delivery_address': deliveryAddress,
-        'delivery_latitude': deliveryLatitude,
-        'delivery_longitude': deliveryLongitude,
-        'recipient_name': recipientName,
-        'recipient_phone': recipientPhone,
+        'pickup_contact_name': pickupContactName ?? '',
+        'pickup_contact_phone': pickupContactPhone ?? '',
+        'dropoff_address': deliveryAddress,
+        'dropoff_latitude': deliveryLatitude,
+        'dropoff_longitude': deliveryLongitude,
+        'dropoff_contact_name': recipientName,
+        'dropoff_contact_phone': recipientPhone,
         if (packageDescription != null) 'package_description': packageDescription,
         if (packageSize != null) 'package_size': packageSize,
+        'payment_method': paymentMethod,
       },
     );
 

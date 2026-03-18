@@ -42,6 +42,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
   // Package
   final _packageDescriptionController = TextEditingController();
   String _selectedPackageSize = 'small';
+  String _selectedPaymentMethod = 'cash';
 
   // Coordonnées par défaut (centre Ouagadougou) — DOIVENT être
   // remplacées via le map picker pour que la commande soit valide.
@@ -171,6 +172,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
               ? null
               : _packageDescriptionController.text,
           packageSize: _selectedPackageSize,
+          paymentMethod: _selectedPaymentMethod,
         ));
   }
 
@@ -680,6 +682,52 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
             ),
           ),
           ),
+          const SizedBox(height: 24),
+          // Payment method selection
+          SlideInWidget(
+            delay: const Duration(milliseconds: 500),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Mode de paiement',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                _buildPaymentOption(
+                  id: 'cash',
+                  icon: Icons.payments_outlined,
+                  color: Colors.green,
+                  title: 'Espèces',
+                  subtitle: 'Payer à la livraison',
+                ),
+                const SizedBox(height: 8),
+                _buildPaymentOption(
+                  id: 'orange_money',
+                  icon: Icons.phone_android,
+                  color: Colors.orange,
+                  title: 'Orange Money',
+                  subtitle: 'Payer par mobile money',
+                ),
+                const SizedBox(height: 8),
+                _buildPaymentOption(
+                  id: 'moov_money',
+                  icon: Icons.phone_android,
+                  color: Colors.blue,
+                  title: 'Moov Money',
+                  subtitle: 'Payer par mobile money',
+                ),
+                const SizedBox(height: 8),
+                _buildPaymentOption(
+                  id: 'wave',
+                  icon: Icons.waves,
+                  color: Colors.lightBlue,
+                  title: 'Wave',
+                  subtitle: 'Payer par Wave',
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -727,6 +775,66 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                 ),
               )),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentOption({
+    required String id,
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+  }) {
+    final isSelected = _selectedPaymentMethod == id;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedPaymentMethod = id),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.08) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? color : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: isSelected ? color : Colors.black87)),
+                  Text(subtitle,
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: isSelected
+                              ? color.withOpacity(0.7)
+                              : Colors.grey[600])),
+                ],
+              ),
+            ),
+            Icon(
+              isSelected
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_off,
+              color: isSelected ? color : Colors.grey,
+            ),
+          ],
+        ),
       ),
     );
   }

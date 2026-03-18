@@ -22,6 +22,7 @@ class OrderRepositoryImpl implements OrderRepository {
     required String recipientPhone,
     String? packageDescription,
     String? packageSize,
+    String paymentMethod = 'cash',
   }) async {
     return await remoteDataSource.createOrder(
       pickupAddress: pickupAddress,
@@ -36,6 +37,7 @@ class OrderRepositoryImpl implements OrderRepository {
       recipientPhone: recipientPhone,
       packageDescription: packageDescription,
       packageSize: packageSize,
+      paymentMethod: paymentMethod,
     );
   }
 

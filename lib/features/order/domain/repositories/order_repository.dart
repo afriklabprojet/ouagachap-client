@@ -15,6 +15,7 @@ abstract class OrderRepository {
     required String recipientPhone,
     String? packageDescription,
     String? packageSize,
+    String paymentMethod = 'cash',
   });
 
   /// Récupérer les commandes de l'utilisateur

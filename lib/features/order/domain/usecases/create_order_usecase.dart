@@ -19,6 +19,7 @@ class CreateOrderUseCase {
     required String recipientPhone,
     String? packageDescription,
     String? packageSize,
+    String paymentMethod = 'cash',
   }) async {
     return await _repository.createOrder(
       pickupAddress: pickupAddress,
@@ -33,6 +34,7 @@ class CreateOrderUseCase {
       recipientPhone: recipientPhone,
       packageDescription: packageDescription,
       packageSize: packageSize,
+      paymentMethod: paymentMethod,
     );
   }
 }
