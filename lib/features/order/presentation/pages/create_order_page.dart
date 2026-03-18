@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../core/services/geocoding_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/animations.dart';
 import '../../../../core/widgets/lottie_animations.dart';
@@ -57,6 +61,18 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
   double _estimatedDistance = 0;
   bool _orderCreated = false;
 
+  // Autocomplete address search
+  final GeocodingService _geocodingService = GeocodingService();
+  Timer? _pickupSearchDebounce;
+  Timer? _deliverySearchDebounce;
+  List<GeocodingResult> _pickupSearchResults = [];
+  List<GeocodingResult> _deliverySearchResults = [];
+  bool _isSearchingPickup = false;
+  bool _isSearchingDelivery = false;
+  bool _isGpsLoading = false;
+  final FocusNode _pickupFocusNode = FocusNode();
+  final FocusNode _deliveryFocusNode = FocusNode();
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -67,6 +83,10 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
     _recipientNameController.dispose();
     _recipientPhoneController.dispose();
     _packageDescriptionController.dispose();
+    _pickupSearchDebounce?.cancel();
+    _deliverySearchDebounce?.cancel();
+    _pickupFocusNode.dispose();
+    _deliveryFocusNode.dispose();
     super.dispose();
   }
 
@@ -103,7 +123,8 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
           return false;
         }
         if (!_pickupCoordsSet) {
-          _showError('Veuillez sélectionner l\'adresse sur la carte pour une localisation précise');
+          // Auto-géocode le texte si l'utilisateur n'a pas sélectionné sur la carte
+          _autoGeocodeAndProceed(isPickup: true);
           return false;
         }
         return true;
@@ -113,7 +134,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
           return false;
         }
         if (!_deliveryCoordsSet) {
-          _showError('Veuillez sélectionner l\'adresse de livraison sur la carte');
+          _autoGeocodeAndProceed(isPickup: false);
           return false;
         }
         if (_recipientNameController.text.isEmpty) {
@@ -133,6 +154,58 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
       default:
         return true;
     }
+  }
+
+  /// Auto-géocode le texte saisi et avance automatiquement si trouvé
+  Future<void> _autoGeocodeAndProceed({required bool isPickup}) async {
+    final address = isPickup
+        ? _pickupAddressController.text
+        : _deliveryAddressController.text;
+
+    _showInfo('Recherche de la position GPS pour "$address"...');
+
+    final results = await _geocodingService.searchAddress(address);
+    if (!mounted) return;
+
+    if (results.isNotEmpty) {
+      final result = results.first;
+      setState(() {
+        if (isPickup) {
+          _pickupLatitude = result.latitude;
+          _pickupLongitude = result.longitude;
+          _pickupAddressController.text = result.shortAddress;
+          _pickupCoordsSet = true;
+        } else {
+          _deliveryLatitude = result.latitude;
+          _deliveryLongitude = result.longitude;
+          _deliveryAddressController.text = result.shortAddress;
+          _deliveryCoordsSet = true;
+        }
+      });
+      // Réessayer la validation maintenant que les coords sont set
+      _nextStep();
+    } else {
+      _showError('Adresse introuvable. Veuillez sélectionner sur la carte.');
+    }
+  }
+
+  void _showInfo(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 16, height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: AppColors.primary,
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   void _calculatePrice() {
@@ -335,35 +408,102 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
             ),
           ),
           const SizedBox(height: 24),
+          // Address field with autocomplete
           SlideInWidget(
             delay: const Duration(milliseconds: 200),
-            child: TextFormField(
-              controller: _pickupAddressController,
-              decoration: InputDecoration(
-                labelText: 'Adresse de récupération *',
-                hintText: 'Ex: Quartier Patte d\'oie, Secteur 15',
-                prefixIcon: const Icon(Icons.location_on_outlined),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.map_outlined, color: AppColors.primary),
-                  tooltip: 'Choisir sur la carte',
-                  onPressed: () => _openMapPicker(isPickup: true),
+            child: Column(
+              children: [
+                TextFormField(
+                  controller: _pickupAddressController,
+                  focusNode: _pickupFocusNode,
+                  onChanged: (value) => _onAddressChanged(value, isPickup: true),
+                  decoration: InputDecoration(
+                    labelText: 'Adresse de récupération *',
+                    hintText: 'Tapez ex: Ouaga 2000, Patte d\'oie...',
+                    prefixIcon: const Icon(Icons.location_on_outlined),
+                    suffixIcon: _isSearchingPickup
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: SizedBox(
+                              width: 20, height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : IconButton(
+                            icon: const Icon(Icons.map_outlined, color: AppColors.primary),
+                            tooltip: 'Choisir sur la carte',
+                            onPressed: () => _openMapPicker(isPickup: true),
+                          ),
+                  ),
+                  maxLines: 2,
                 ),
-              ),
-              maxLines: 2,
+                // Autocomplete results dropdown
+                if (_pickupSearchResults.isNotEmpty)
+                  _buildSearchResults(_pickupSearchResults, isPickup: true),
+              ],
             ),
           ),
           const SizedBox(height: 12),
+          // GPS + Map buttons row
           SlideInWidget(
             delay: const Duration(milliseconds: 220),
-            child: OutlinedButton.icon(
-              onPressed: () => _openMapPicker(isPickup: true),
-              icon: const Icon(Icons.map),
-              label: const Text('Sélectionner sur la carte'),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 44),
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _isGpsLoading ? null : () => _useCurrentLocation(isPickup: true),
+                    icon: _isGpsLoading
+                        ? const SizedBox(
+                            width: 18, height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.my_location, size: 20),
+                    label: const Text('Ma position'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 44),
+                      foregroundColor: Colors.green.shade700,
+                      side: BorderSide(color: Colors.green.shade300),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _openMapPicker(isPickup: true),
+                    icon: const Icon(Icons.map, size: 20),
+                    label: const Text('Sur la carte'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 44),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
+          // Show GPS confirmation chip
+          if (_pickupCoordsSet)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green.shade600, size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Position GPS confirmée',
+                      style: TextStyle(color: Colors.green.shade700, fontSize: 12, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           const SizedBox(height: 20),
           const Divider(),
           const SizedBox(height: 16),
@@ -447,29 +587,96 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
             ],
           ),
           const SizedBox(height: 24),
-          TextFormField(
-            controller: _deliveryAddressController,
-            decoration: InputDecoration(
-              labelText: 'Adresse de livraison *',
-              hintText: 'Ex: Avenue Kwame Nkrumah, Ouaga 2000',
-              prefixIcon: const Icon(Icons.location_on),
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.map_outlined, color: AppColors.primary),
-                tooltip: 'Choisir sur la carte',
-                onPressed: () => _openMapPicker(isPickup: false),
+          // Address field with autocomplete
+          Column(
+            children: [
+              TextFormField(
+                controller: _deliveryAddressController,
+                focusNode: _deliveryFocusNode,
+                onChanged: (value) => _onAddressChanged(value, isPickup: false),
+                decoration: InputDecoration(
+                  labelText: 'Adresse de livraison *',
+                  hintText: 'Tapez ex: Ouaga 2000, Karpala...',
+                  prefixIcon: const Icon(Icons.location_on),
+                  suffixIcon: _isSearchingDelivery
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                            width: 20, height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : IconButton(
+                          icon: const Icon(Icons.map_outlined, color: AppColors.primary),
+                          tooltip: 'Choisir sur la carte',
+                          onPressed: () => _openMapPicker(isPickup: false),
+                        ),
+                ),
+                maxLines: 2,
               ),
-            ),
-            maxLines: 2,
+              // Autocomplete results dropdown
+              if (_deliverySearchResults.isNotEmpty)
+                _buildSearchResults(_deliverySearchResults, isPickup: false),
+            ],
           ),
           const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: () => _openMapPicker(isPickup: false),
-            icon: const Icon(Icons.map),
-            label: const Text('Sélectionner sur la carte'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 44),
-            ),
+          // GPS + Map buttons row
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _isGpsLoading ? null : () => _useCurrentLocation(isPickup: false),
+                  icon: _isGpsLoading
+                      ? const SizedBox(
+                          width: 18, height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.my_location, size: 20),
+                  label: const Text('Ma position'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 44),
+                    foregroundColor: Colors.green.shade700,
+                    side: BorderSide(color: Colors.green.shade300),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _openMapPicker(isPickup: false),
+                  icon: const Icon(Icons.map, size: 20),
+                  label: const Text('Sur la carte'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 44),
+                  ),
+                ),
+              ),
+            ],
           ),
+          // Show GPS confirmation chip
+          if (_deliveryCoordsSet)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green.shade600, size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Position GPS confirmée',
+                      style: TextStyle(color: Colors.green.shade700, fontSize: 12, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           const SizedBox(height: 20),
           const Divider(),
           const SizedBox(height: 16),
@@ -1120,6 +1327,243 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
         ),
       ),
     );
+  }
+
+  // ─── Autocomplete address search ───────────────────────────────
+
+  void _onAddressChanged(String value, {required bool isPickup}) {
+    // Reset coords when user types manually
+    if (isPickup) {
+      _pickupCoordsSet = false;
+    } else {
+      _deliveryCoordsSet = false;
+    }
+
+    // Cancel previous debounce
+    if (isPickup) {
+      _pickupSearchDebounce?.cancel();
+    } else {
+      _deliverySearchDebounce?.cancel();
+    }
+
+    if (value.length < 3) {
+      setState(() {
+        if (isPickup) {
+          _pickupSearchResults = [];
+          _isSearchingPickup = false;
+        } else {
+          _deliverySearchResults = [];
+          _isSearchingDelivery = false;
+        }
+      });
+      return;
+    }
+
+    setState(() {
+      if (isPickup) {
+        _isSearchingPickup = true;
+      } else {
+        _isSearchingDelivery = true;
+      }
+    });
+
+    final timer = Timer(const Duration(milliseconds: 600), () async {
+      final results = await _geocodingService.searchAddress(value);
+      if (!mounted) return;
+      setState(() {
+        if (isPickup) {
+          _pickupSearchResults = results;
+          _isSearchingPickup = false;
+        } else {
+          _deliverySearchResults = results;
+          _isSearchingDelivery = false;
+        }
+      });
+    });
+
+    if (isPickup) {
+      _pickupSearchDebounce = timer;
+    } else {
+      _deliverySearchDebounce = timer;
+    }
+  }
+
+  void _selectSearchResult(GeocodingResult result, {required bool isPickup}) {
+    setState(() {
+      if (isPickup) {
+        _pickupAddressController.text = result.shortAddress;
+        _pickupLatitude = result.latitude;
+        _pickupLongitude = result.longitude;
+        _pickupCoordsSet = true;
+        _pickupSearchResults = [];
+        _pickupFocusNode.unfocus();
+      } else {
+        _deliveryAddressController.text = result.shortAddress;
+        _deliveryLatitude = result.latitude;
+        _deliveryLongitude = result.longitude;
+        _deliveryCoordsSet = true;
+        _deliverySearchResults = [];
+        _deliveryFocusNode.unfocus();
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Expanded(child: Text('Position GPS définie : ${result.shortAddress}')),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Widget _buildSearchResults(List<GeocodingResult> results, {required bool isPickup}) {
+    return Container(
+      margin: const EdgeInsets.only(top: 4),
+      constraints: const BoxConstraints(maxHeight: 200),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: ListView.separated(
+        shrinkWrap: true,
+        padding: EdgeInsets.zero,
+        itemCount: results.length,
+        separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.shade200),
+        itemBuilder: (context, index) {
+          final result = results[index];
+          return ListTile(
+            dense: true,
+            leading: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.location_on, color: AppColors.primary, size: 18),
+            ),
+            title: Text(
+              result.shortAddress,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              result.displayName,
+              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            onTap: () => _selectSearchResult(result, isPickup: isPickup),
+          );
+        },
+      ),
+    );
+  }
+
+  // ─── GPS current location ─────────────────────────────────────
+
+  Future<void> _useCurrentLocation({required bool isPickup}) async {
+    setState(() => _isGpsLoading = true);
+
+    try {
+      // Check permissions
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (!mounted) return;
+
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (!mounted) return;
+        if (permission == LocationPermission.denied) {
+          _showError('Permission de localisation refusée');
+          setState(() => _isGpsLoading = false);
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (!mounted) return;
+        setState(() => _isGpsLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Activez la localisation dans les paramètres'),
+            backgroundColor: AppColors.error,
+            action: SnackBarAction(
+              label: 'OUVRIR',
+              textColor: Colors.white,
+              onPressed: () => Geolocator.openAppSettings(),
+            ),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 15),
+        ),
+      );
+      if (!mounted) return;
+
+      // Reverse geocode to get address text
+      final result = await _geocodingService.getAddressFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+      if (!mounted) return;
+
+      setState(() {
+        if (isPickup) {
+          _pickupLatitude = position.latitude;
+          _pickupLongitude = position.longitude;
+          _pickupAddressController.text = result?.shortAddress ?? 'Position actuelle';
+          _pickupCoordsSet = true;
+          _pickupSearchResults = [];
+        } else {
+          _deliveryLatitude = position.latitude;
+          _deliveryLongitude = position.longitude;
+          _deliveryAddressController.text = result?.shortAddress ?? 'Position actuelle';
+          _deliveryCoordsSet = true;
+          _deliverySearchResults = [];
+        }
+        _isGpsLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.my_location, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              const Expanded(child: Text('Position GPS détectée !')),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isGpsLoading = false);
+      _showError('Impossible d\'obtenir la position GPS. Vérifiez que la localisation est activée.');
+    }
   }
 
   Future<void> _openMapPicker({required bool isPickup}) async {
