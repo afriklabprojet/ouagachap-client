@@ -69,14 +69,22 @@ class OrderCancelled extends OrderState {
 class PriceCalculated extends OrderState {
   final double price;
   final double distance;
+  final double basePrice;
+  final double distancePrice;
+  final double commissionAmount;
+  final double courierEarnings;
 
   const PriceCalculated({
     required this.price,
     required this.distance,
+    this.basePrice = 0,
+    this.distancePrice = 0,
+    this.commissionAmount = 0,
+    this.courierEarnings = 0,
   });
 
   @override
-  List<Object?> get props => [price, distance];
+  List<Object?> get props => [price, distance, basePrice, distancePrice, commissionAmount, courierEarnings];
 }
 
 class OrderError extends OrderState {

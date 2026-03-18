@@ -65,7 +65,7 @@ class OrderRepositoryImpl implements OrderRepository {
   }
 
   @override
-  Future<double> calculatePrice({
+  Future<Map<String, double>> calculatePrice({
     required double pickupLatitude,
     required double pickupLongitude,
     required double deliveryLatitude,

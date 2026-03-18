@@ -7,6 +7,7 @@ import '../../domain/usecases/create_order_usecase.dart';
 import '../../domain/usecases/get_orders_usecase.dart';
 import '../../domain/usecases/get_order_details_usecase.dart';
 import '../../domain/usecases/cancel_order_usecase.dart';
+import '../../domain/usecases/calculate_price_usecase.dart';
 import '../../domain/usecases/rate_courier.dart';
 import 'order_event.dart';
 import 'order_state.dart';
@@ -16,6 +17,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
   final GetOrdersUseCase getOrdersUseCase;
   final GetOrderDetailsUseCase getOrderDetailsUseCase;
   final CancelOrderUseCase cancelOrderUseCase;
+  final CalculatePriceUseCase calculatePriceUseCase;
   final RateCourierUseCase rateCourierUseCase;
 
   StreamSubscription? _trackingSubscription;
@@ -25,6 +27,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     required this.getOrdersUseCase,
     required this.getOrderDetailsUseCase,
     required this.cancelOrderUseCase,
+    required this.calculatePriceUseCase,
     required this.rateCourierUseCase,
   }) : super(OrderInitial()) {
     // droppable() → ignore les taps rapides pendant qu'une opération est en cours
@@ -133,24 +136,34 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     CalculatePriceRequested event,
     Emitter<OrderState> emit,
   ) async {
-    // Calcul local de la distance et du prix
-    // Formule Haversine pour la distance
-    const baseFare = 500.0; // 500 FCFA
-    const pricePerKm = 200.0; // 200 FCFA/km
+    try {
+      // Appel API serveur pour obtenir le prix basé sur les zones configurées
+      final estimate = await calculatePriceUseCase(
+        pickupLatitude: event.pickupLatitude,
+        pickupLongitude: event.pickupLongitude,
+        deliveryLatitude: event.deliveryLatitude,
+        deliveryLongitude: event.deliveryLongitude,
+      );
 
-    final distance = _calculateDistance(
-      event.pickupLatitude,
-      event.pickupLongitude,
-      event.deliveryLatitude,
-      event.deliveryLongitude,
-    );
-
-    final price = baseFare + (distance * pricePerKm);
-
-    emit(PriceCalculated(
-      price: price,
-      distance: distance,
-    ));
+      emit(PriceCalculated(
+        price: estimate['total_price'] ?? 0,
+        distance: estimate['distance_km'] ?? 0,
+        basePrice: estimate['base_price'] ?? 0,
+        distancePrice: estimate['distance_price'] ?? 0,
+        commissionAmount: estimate['commission_amount'] ?? 0,
+        courierEarnings: estimate['courier_earnings'] ?? 0,
+      ));
+    } catch (e) {
+      // Fallback local si l'API est indisponible
+      final distance = _calculateDistance(
+        event.pickupLatitude,
+        event.pickupLongitude,
+        event.deliveryLatitude,
+        event.deliveryLongitude,
+      );
+      final price = 500.0 + (distance * 200.0);
+      emit(PriceCalculated(price: price, distance: distance));
+    }
   }
 
   Future<void> _onStartOrderTrackingRequested(

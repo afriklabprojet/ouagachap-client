@@ -29,6 +29,7 @@ import '../../features/order/domain/usecases/create_order_usecase.dart';
 import '../../features/order/domain/usecases/get_orders_usecase.dart';
 import '../../features/order/domain/usecases/get_order_details_usecase.dart';
 import '../../features/order/domain/usecases/cancel_order_usecase.dart';
+import '../../features/order/domain/usecases/calculate_price_usecase.dart';
 import '../../features/order/domain/usecases/rate_courier.dart';
 import '../../features/order/presentation/bloc/order_bloc.dart';
 import '../../features/notification/data/datasources/notification_remote_datasource.dart';
@@ -177,6 +178,7 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton(() => GetOrdersUseCase(getIt<OrderRepository>()));
   getIt.registerLazySingleton(() => GetOrderDetailsUseCase(getIt<OrderRepository>()));
   getIt.registerLazySingleton(() => CancelOrderUseCase(getIt<OrderRepository>()));
+  getIt.registerLazySingleton(() => CalculatePriceUseCase(getIt<OrderRepository>()));
   getIt.registerLazySingleton(() => RateCourierUseCase(getIt<OrderRepository>()));
   
   // Use Cases - Notification
@@ -199,6 +201,7 @@ Future<void> configureDependencies() async {
       getOrdersUseCase: getIt<GetOrdersUseCase>(),
       getOrderDetailsUseCase: getIt<GetOrderDetailsUseCase>(),
       cancelOrderUseCase: getIt<CancelOrderUseCase>(),
+      calculatePriceUseCase: getIt<CalculatePriceUseCase>(),
       rateCourierUseCase: getIt<RateCourierUseCase>(),
     ),
   );

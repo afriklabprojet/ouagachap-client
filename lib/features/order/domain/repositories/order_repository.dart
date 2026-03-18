@@ -31,8 +31,8 @@ abstract class OrderRepository {
   /// Annuler une commande
   Future<void> cancelOrder(String orderId, {String? reason});
 
-  /// Calculer le prix estimé
-  Future<double> calculatePrice({
+  /// Calculer le prix estimé via l'API serveur (zones + commission)
+  Future<Map<String, double>> calculatePrice({
     required double pickupLatitude,
     required double pickupLongitude,
     required double deliveryLatitude,

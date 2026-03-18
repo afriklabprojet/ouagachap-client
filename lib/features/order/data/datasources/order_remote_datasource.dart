@@ -29,7 +29,7 @@ abstract class OrderRemoteDataSource {
 
   Future<void> cancelOrder(String orderId, {String? reason});
 
-  Future<double> calculatePrice({
+  Future<Map<String, double>> calculatePrice({
     required double pickupLatitude,
     required double pickupLongitude,
     required double deliveryLatitude,
@@ -129,24 +129,31 @@ class OrderRemoteDataSourceImpl implements OrderRemoteDataSource {
   }
 
   @override
-  Future<double> calculatePrice({
+  Future<Map<String, double>> calculatePrice({
     required double pickupLatitude,
     required double pickupLongitude,
     required double deliveryLatitude,
     required double deliveryLongitude,
   }) async {
     final response = await _apiClient.post(
-      '/orders/calculate-price',
+      '/orders/estimate',
       data: {
         'pickup_latitude': pickupLatitude,
         'pickup_longitude': pickupLongitude,
-        'delivery_latitude': deliveryLatitude,
-        'delivery_longitude': deliveryLongitude,
+        'dropoff_latitude': deliveryLatitude,
+        'dropoff_longitude': deliveryLongitude,
       },
     );
 
-    final price = response.data['data']?['price'] ?? response.data['price'] ?? 0;
-    return (price as num).toDouble();
+    final data = response.data['data'] ?? response.data;
+    return {
+      'total_price': ((data['total_price'] ?? 0) as num).toDouble(),
+      'distance_km': ((data['distance_km'] ?? 0) as num).toDouble(),
+      'base_price': ((data['base_price'] ?? 0) as num).toDouble(),
+      'distance_price': ((data['distance_price'] ?? 0) as num).toDouble(),
+      'commission_amount': ((data['commission_amount'] ?? 0) as num).toDouble(),
+      'courier_earnings': ((data['courier_earnings'] ?? 0) as num).toDouble(),
+    };
   }
 
   @override

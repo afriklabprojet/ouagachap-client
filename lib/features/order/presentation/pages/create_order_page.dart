@@ -59,6 +59,8 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
 
   double _estimatedPrice = 0;
   double _estimatedDistance = 0;
+  double _basePrice = 0;
+  double _distancePrice = 0;
   bool _orderCreated = false;
 
   // Autocomplete address search
@@ -263,6 +265,8 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
           setState(() {
             _estimatedPrice = state.price;
             _estimatedDistance = state.distance;
+            _basePrice = state.basePrice;
+            _distancePrice = state.distancePrice;
           });
         } else if (state is OrderCreated) {
           _orderCreated = true;
@@ -865,6 +869,26 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                     Text('${_estimatedDistance.toStringAsFixed(1)} km'),
                   ],
                 ),
+                if (_basePrice > 0) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Prix de base'),
+                      Text('${_basePrice.toInt()} FCFA'),
+                    ],
+                  ),
+                ],
+                if (_distancePrice > 0) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Prix distance'),
+                      Text('${_distancePrice.toInt()} FCFA'),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 8),
                 const Divider(),
                 const SizedBox(height: 8),
