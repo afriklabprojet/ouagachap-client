@@ -23,6 +23,7 @@ import 'features/wallet/presentation/bloc/wallet_event.dart';
 import 'features/wallet/presentation/bloc/jeko_payment_bloc.dart';
 import 'features/support/presentation/bloc/support_bloc.dart';
 import 'features/incoming/presentation/bloc/incoming_order_bloc.dart';
+import 'features/address/presentation/bloc/address_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -115,6 +116,9 @@ class OuagaChapApp extends StatelessWidget {
         ),
         BlocProvider<JekoPaymentBloc>(
           create: (_) => getIt<JekoPaymentBloc>(),
+        ),
+        BlocProvider<AddressBloc>(
+          create: (_) => getIt<AddressBloc>(),
         ),
       ],
       child: BlocListener<AuthBloc, AuthState>(
