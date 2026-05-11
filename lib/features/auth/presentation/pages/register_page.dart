@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/form_validators.dart';
@@ -36,13 +37,15 @@ class _RegisterPageState extends State<RegisterPage> {
   void _onRegister() {
     if (_formKey.currentState?.validate() ?? false) {
       final phone = '+226${_phoneController.text.replaceAll(' ', '')}';
-      context.read<AuthBloc>().add(AuthRegisterRequested(
-            name: _nameController.text.trim(),
-            phone: phone,
-            email: _emailController.text.trim().isEmpty
-                ? null
-                : _emailController.text.trim(),
-          ));
+      context.read<AuthBloc>().add(
+        AuthRegisterRequested(
+          name: _nameController.text.trim(),
+          phone: phone,
+          email: _emailController.text.trim().isEmpty
+              ? null
+              : _emailController.text.trim(),
+        ),
+      );
     }
   }
 
@@ -51,20 +54,18 @@ class _RegisterPageState extends State<RegisterPage> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthOtpSent) {
-          // Afficher message de succès avant navigation
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Compte créé ! Code de vérification envoyé par SMS'),
-              backgroundColor: AppColors.success,
-              duration: Duration(seconds: 2),
-            ),
+          // Naviguer vers la page OTP — le message de confirmation
+          // s'affiche depuis OtpVerificationPage via postFrameCallback
+          context.go(
+            Routes.otpVerification,
+            extra: {
+              'phoneNumber': state.phone,
+              'isLogin': state.isLogin,
+              'confirmationMessage': AppLocalizations.of(
+                context,
+              )!.translate('otp_sent_registration'),
+            },
           );
-          
-          // Naviguer vers la page OTP
-          context.go(Routes.otpVerification, extra: {
-            'phoneNumber': state.phone,
-            'isLogin': state.isLogin,
-          });
         } else if (state is AuthSuccess) {
           // Message de succès
           ScaffoldMessenger.of(context).showSnackBar(
@@ -108,9 +109,9 @@ class _RegisterPageState extends State<RegisterPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Title
-                  SlideInWidget(
-                    beginOffset: const Offset(0, 0.3),
-                    child: const Text(
+                  const SlideInWidget(
+                    beginOffset: Offset(0, 0.3),
+                    child: Text(
                       'Créer un compte',
                       style: TextStyle(
                         fontSize: 28,
@@ -123,10 +124,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     delay: const Duration(milliseconds: 100),
                     child: Text(
                       'Remplissez vos informations pour vous inscrire',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -134,6 +132,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   TextFormField(
                     controller: _nameController,
                     textCapitalization: TextCapitalization.words,
+                    autofillHints: const [AutofillHints.name],
                     decoration: const InputDecoration(
                       labelText: 'Nom complet',
                       hintText: 'Ex: Abdoulaye Ouédraogo',
@@ -154,6 +153,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   TextFormField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
+                    autofillHints: const [AutofillHints.telephoneNumber],
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
                       LengthLimitingTextInputFormatter(8),
@@ -167,10 +167,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text(
-                              '🇧🇫',
-                              style: TextStyle(fontSize: 20),
-                            ),
+                            const Text('🇧🇫', style: TextStyle(fontSize: 20)),
                             const SizedBox(width: 8),
                             Text(
                               '+226',
@@ -199,9 +196,37 @@ class _RegisterPageState extends State<RegisterPage> {
                       }
                       // Vérifier les préfixes valides au Burkina Faso
                       final prefix = digits.substring(0, 2);
-                      const validPrefixes = ['50','51','52','53','54','55','56','57','58',
-                                             '60','61','62','63','64','65','66','67','68','69',
-                                             '70','71','72','73','74','75','76','77','78','79'];
+                      const validPrefixes = [
+                        '50',
+                        '51',
+                        '52',
+                        '53',
+                        '54',
+                        '55',
+                        '56',
+                        '57',
+                        '58',
+                        '60',
+                        '61',
+                        '62',
+                        '63',
+                        '64',
+                        '65',
+                        '66',
+                        '67',
+                        '68',
+                        '69',
+                        '70',
+                        '71',
+                        '72',
+                        '73',
+                        '74',
+                        '75',
+                        '76',
+                        '77',
+                        '78',
+                        '79',
+                      ];
                       if (!validPrefixes.contains(prefix)) {
                         return 'Préfixe invalide. Utilisez un numéro Burkina Faso';
                       }
@@ -213,30 +238,19 @@ class _RegisterPageState extends State<RegisterPage> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
+                    autofillHints: const [AutofillHints.email],
                     decoration: const InputDecoration(
                       labelText: 'Email (optionnel)',
                       hintText: 'exemple@email.com',
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
-                    validator: (value) {
-                      if (value != null && value.isNotEmpty) {
-                        final emailRegex =
-                            RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                        if (!emailRegex.hasMatch(value)) {
-                          return 'Email invalide';
-                        }
-                      }
-                      return null;
-                    },
+                    validator: FormValidators.email,
                   ),
                   const SizedBox(height: 32),
                   // Terms
                   Text(
                     'En vous inscrivant, vous acceptez nos conditions d\'utilisation et notre politique de confidentialité.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 24),
                   // Register button

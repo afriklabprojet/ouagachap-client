@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../../core/di/injection.dart';
+import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/services/theme_service.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/lottie_animations.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/animations.dart';
+import '../../../../core/widgets/skeleton_loaders.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -26,13 +28,16 @@ class ProfilePage extends StatelessWidget {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Mon profil'),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.go(Routes.home),
-          ),
+          title: Text(context.l10n.profile),
+          automaticallyImplyLeading: false,
         ),
         body: BlocBuilder<AuthBloc, AuthState>(
+          buildWhen: (p, c) {
+            if (p is AuthAuthenticated && c is AuthAuthenticated) {
+              return p.user != c.user;
+            }
+            return p.runtimeType != c.runtimeType;
+          },
           builder: (context, state) {
             if (state is AuthAuthenticated) {
               final user = state.user;
@@ -48,7 +53,7 @@ class ProfilePage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -63,12 +68,21 @@ class ProfilePage extends StatelessWidget {
                             decoration: BoxDecoration(
                               color: AppColors.primaryLight,
                               shape: BoxShape.circle,
+                              image:
+                                  user.avatar != null && user.avatar!.isNotEmpty
+                                  ? DecorationImage(
+                                      image: NetworkImage(user.avatar!),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
                             ),
-                            child: const Icon(
-                              Icons.person,
-                              size: 40,
-                              color: AppColors.primary,
-                            ),
+                            child: user.avatar == null || user.avatar!.isEmpty
+                                ? const Icon(
+                                    Icons.person,
+                                    size: 40,
+                                    color: AppColors.primary,
+                                  )
+                                : null,
                           ),
                           const SizedBox(height: 16),
                           // Name
@@ -101,8 +115,9 @@ class ProfilePage extends StatelessWidget {
                           const SizedBox(height: 16),
                           // Edit button
                           OutlinedButton.icon(
-                            onPressed: () =>
-                                context.go('${Routes.profile}/${Routes.editProfile}'),
+                            onPressed: () => context.go(
+                              '${Routes.profile}/${Routes.editProfile}',
+                            ),
                             icon: const Icon(Icons.edit, size: 18),
                             label: const Text('Modifier'),
                           ),
@@ -119,32 +134,48 @@ class ProfilePage extends StatelessWidget {
                     _buildMenuItem(
                       icon: Icons.location_on_outlined,
                       title: 'Mes adresses',
-                      onTap: () => context.go('${Routes.profile}/${Routes.addresses}'),
+                      onTap: () =>
+                          context.go('${Routes.profile}/${Routes.addresses}'),
                     ),
                     _buildMenuItem(
                       icon: Icons.notifications_outlined,
-                      title: 'Notifications',
-                      onTap: () => context.go('${Routes.profile}/${Routes.notifications}'),
+                      title: context.l10n.notifications,
+                      onTap: () => context.go(
+                        '${Routes.profile}/${Routes.notifications}',
+                      ),
                     ),
                     _buildMenuItem(
                       icon: Icons.help_outline,
-                      title: 'Aide & Support',
-                      onTap: () => context.go('${Routes.profile}/${Routes.support}'),
+                      title: context.l10n.helpSupport,
+                      onTap: () =>
+                          context.go('${Routes.profile}/${Routes.support}'),
+                    ),
+                    _buildMenuItem(
+                      icon: Icons.accessibility_new,
+                      title: 'Accessibilité',
+                      onTap: () => context.go(
+                        '${Routes.profile}/${Routes.accessibility}',
+                      ),
                     ),
                     _buildThemeToggle(),
                     _buildMenuItem(
                       icon: Icons.info_outline,
-                      title: 'À propos',
-                      onTap: () {
+                      title: context.l10n.about,
+                      onTap: () async {
+                        final packageInfo = await PackageInfo.fromPlatform();
+                        if (!context.mounted) return;
+                        final year = DateTime.now().year;
                         showAboutDialog(
                           context: context,
                           applicationName: 'OUAGA CHAP',
-                          applicationVersion: '1.0.0',
-                          applicationLegalese: '© 2024 OUAGA CHAP',
+                          applicationVersion:
+                              '${packageInfo.version} (${packageInfo.buildNumber})',
+                          applicationLegalese: '© $year OUAGA CHAP',
                           children: [
                             const SizedBox(height: 16),
                             const Text(
-                                'Application de livraison rapide à Ouagadougou'),
+                              'Application de livraison rapide à Ouagadougou',
+                            ),
                           ],
                         );
                       },
@@ -156,7 +187,7 @@ class ProfilePage extends StatelessWidget {
                       child: OutlinedButton.icon(
                         onPressed: () => _showLogoutDialog(context),
                         icon: const Icon(Icons.logout, color: AppColors.error),
-                        label: const Text('Déconnexion'),
+                        label: Text(context.l10n.logout),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.error,
                           side: const BorderSide(color: AppColors.error),
@@ -165,21 +196,25 @@ class ProfilePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 32),
                     // Version
-                    Text(
-                      'Version 1.0.0',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[400],
-                      ),
+                    FutureBuilder<PackageInfo>(
+                      future: PackageInfo.fromPlatform(),
+                      builder: (context, snapshot) {
+                        final version = snapshot.data?.version ?? '...';
+                        return Text(
+                          'Version $version',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[400],
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
               );
             }
-            
-            return const AnimatedLoadingWidget(
-              message: 'Chargement du profil...',
-            );
+
+            return const ProfileSkeleton();
           },
         ),
       ),
@@ -234,7 +269,7 @@ class ProfilePage extends StatelessWidget {
               trailing: Switch(
                 value: themeService.isDarkMode,
                 onChanged: (_) => themeService.toggleTheme(),
-                activeColor: AppColors.primary,
+                activeThumbColor: AppColors.primary,
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -249,13 +284,13 @@ class ProfilePage extends StatelessWidget {
   void _showLogoutDialog(BuildContext context) async {
     final confirmed = await ConfirmDialog.show(
       context,
-      title: 'Déconnexion',
-      message: 'Êtes-vous sûr de vouloir vous déconnecter ?',
-      confirmText: 'Déconnexion',
-      cancelText: 'Annuler',
+      title: context.l10n.logout,
+      message: context.l10n.logoutConfirm,
+      confirmText: context.l10n.logout,
+      cancelText: context.l10n.cancel,
       isDestructive: true,
     );
-    
+
     if (confirmed == true && context.mounted) {
       context.read<AuthBloc>().add(AuthLogoutRequested());
     }

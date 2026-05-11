@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/services/secure_token_service.dart';
 import '../models/user_model.dart';
 
 abstract class AuthLocalDataSource {
@@ -16,49 +17,64 @@ abstract class AuthLocalDataSource {
 
 class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   final SharedPreferences _prefs;
-  
-  static const String _tokenKey = 'auth_token';
+  final SecureTokenService _tokenService;
+
   static const String _userKey = 'user_data';
   static const String _onboardingKey = 'has_seen_onboarding';
 
-  AuthLocalDataSourceImpl(this._prefs);
+  AuthLocalDataSourceImpl(this._prefs, this._tokenService);
 
   @override
   Future<void> saveToken(String token) async {
-    await _prefs.setString(_tokenKey, token);
+    await _tokenService.saveToken(token);
   }
 
   @override
   Future<String?> getToken() async {
-    return _prefs.getString(_tokenKey);
+    return _tokenService.token;
   }
 
   @override
   Future<void> deleteToken() async {
-    await _prefs.remove(_tokenKey);
+    await _tokenService.deleteToken();
   }
 
   @override
   Future<void> saveUser(UserModel user) async {
     final userJson = jsonEncode(user.toJson());
-    await _prefs.setString(_userKey, userJson);
+    await _tokenService.saveUserData(userJson);
   }
 
   @override
   Future<UserModel?> getUser() async {
-    final userJson = _prefs.getString(_userKey);
-    if (userJson == null) return null;
-    
+    final userJson = _tokenService.userData;
+    // Fallback: migrer depuis SharedPreferences si présent
+    if (userJson == null) {
+      final legacyJson = _prefs.getString(_userKey);
+      if (legacyJson != null) {
+        try {
+          final user = UserModel.fromJson(jsonDecode(legacyJson));
+          await _tokenService.saveUserData(legacyJson);
+          await _prefs.remove(_userKey);
+          return user;
+        } on FormatException {
+          await _prefs.remove(_userKey);
+          return null;
+        }
+      }
+      return null;
+    }
     try {
-      final userData = jsonDecode(userJson) as Map<String, dynamic>;
-      return UserModel.fromJson(userData);
-    } catch (e) {
+      return UserModel.fromJson(jsonDecode(userJson));
+    } on FormatException {
       return null;
     }
   }
 
   @override
   Future<void> deleteUser() async {
+    await _tokenService.deleteUserData();
+    // Nettoyer aussi l'ancien stockage si présent
     await _prefs.remove(_userKey);
   }
 

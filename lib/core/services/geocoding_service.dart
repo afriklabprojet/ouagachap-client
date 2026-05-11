@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 /// Service de géocodage pour convertir coordonnées <-> adresse
@@ -18,10 +19,7 @@ class GeocodingService {
 
       final response = await http.get(
         url,
-        headers: {
-          'User-Agent': 'OuagaChap/1.0',
-          'Accept-Language': 'fr',
-        },
+        headers: {'User-Agent': 'OuagaChap/1.0', 'Accept-Language': 'fr'},
       );
 
       if (response.statusCode == 200) {
@@ -30,7 +28,7 @@ class GeocodingService {
       }
       return null;
     } catch (e) {
-      print('Erreur géocodage inverse: $e');
+      debugPrint('Erreur géocodage inverse: $e');
       return null;
     }
   }
@@ -46,10 +44,7 @@ class GeocodingService {
 
       final response = await http.get(
         url,
-        headers: {
-          'User-Agent': 'OuagaChap/1.0',
-          'Accept-Language': 'fr',
-        },
+        headers: {'User-Agent': 'OuagaChap/1.0', 'Accept-Language': 'fr'},
       );
 
       if (response.statusCode == 200) {
@@ -58,7 +53,7 @@ class GeocodingService {
       }
       return [];
     } catch (e) {
-      print('Erreur recherche adresse: $e');
+      debugPrint('Erreur recherche adresse: $e');
       return [];
     }
   }
@@ -88,7 +83,7 @@ class GeocodingResult {
 
   factory GeocodingResult.fromNominatim(Map<String, dynamic> json) {
     final address = json['address'] as Map<String, dynamic>?;
-    
+
     return GeocodingResult(
       latitude: double.parse(json['lat'].toString()),
       longitude: double.parse(json['lon'].toString()),
@@ -107,13 +102,13 @@ class GeocodingResult {
     if (neighbourhood != null) parts.add(neighbourhood!);
     if (suburb != null && suburb != neighbourhood) parts.add(suburb!);
     if (street != null) parts.add(street!);
-    
+
     if (parts.isEmpty) {
       // Extraire les premiers éléments du displayName
       final displayParts = displayName.split(',');
       return displayParts.take(2).join(', ').trim();
     }
-    
+
     return parts.join(', ');
   }
 }

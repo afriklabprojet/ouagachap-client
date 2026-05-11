@@ -324,8 +324,8 @@ class ShimmerListPlaceholder extends StatelessWidget {
         padding: padding,
         itemCount: itemCount,
         itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
                 ShimmerPlaceholder(
@@ -333,13 +333,13 @@ class ShimmerListPlaceholder extends StatelessWidget {
                   height: 60,
                   borderRadius: 30,
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ShimmerPlaceholder(height: 16, width: 150),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       ShimmerPlaceholder(height: 12, width: 100),
                     ],
                   ),

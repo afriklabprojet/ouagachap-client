@@ -73,16 +73,20 @@ class AppLocalizations {
       'invalid_phone': 'Numéro de téléphone invalide',
       'invalid_otp': 'Code OTP invalide',
       'otp_expired': 'Code expiré',
+      'otp_sent_confirmation': 'Code de vérification envoyé',
+      'otp_sent_registration': 'Compte créé ! Code de vérification envoyé',
 
       // Onboarding
       'onboarding_title_1': 'Livraison rapide',
-      'onboarding_desc_1': 'Faites livrer vos colis rapidement partout à Ouagadougou',
+      'onboarding_desc_1':
+          'Faites livrer vos colis rapidement partout à Ouagadougou',
       'onboarding_title_2': 'Suivi en temps réel',
       'onboarding_desc_2': 'Suivez votre livraison en direct sur la carte',
       'onboarding_title_3': 'Paiement facile',
       'onboarding_desc_3': 'Payez facilement avec Mobile Money',
       'skip': 'Passer',
       'next': 'Suivant',
+      'previous': 'Précédent',
       'get_started': 'Commencer',
 
       // Home
@@ -150,14 +154,19 @@ class AppLocalizations {
       'base_fare': 'Tarif de base',
       'distance_fare': 'Tarif distance',
       'service_fee': 'Frais de service',
+      'pay_cash_subtitle': 'Payer à la livraison',
+      'pay_mobile_money_subtitle': 'Payer par mobile money',
+      'pay_wave_subtitle': 'Payer par Wave',
 
       // Wallet
       'wallet': 'Portefeuille',
+      'wallet_title': 'Mon Portefeuille',
       'balance': 'Solde',
       'add_funds': 'Recharger',
       'transactions': 'Transactions',
+      'recent_transactions': 'Transactions récentes',
       'transaction_history': 'Historique',
-      'no_transactions': 'Aucune transaction',
+      'no_transactions': 'Aucune transaction pour le moment',
       'recharge': 'Recharger',
       'recharge_amount': 'Montant à recharger',
       'recharge_success': 'Recharge réussie !',
@@ -210,12 +219,20 @@ class AppLocalizations {
 
       // Errors
       'error_network': 'Erreur de connexion. Vérifiez votre internet.',
+      'connection_restored': 'Connexion rétablie',
+      'no_internet': 'Pas de connexion internet',
       'error_server': 'Erreur serveur. Réessayez plus tard.',
       'error_timeout': 'Délai d\'attente dépassé. Réessayez.',
       'error_unknown': 'Une erreur est survenue.',
       'error_location': 'Impossible d\'obtenir votre position.',
       'error_permission': 'Permission refusée.',
       'session_expired': 'Session expirée. Reconnectez-vous.',
+      'fill_required_fields': 'Veuillez remplir les champs obligatoires',
+      'please_select_rating': 'Veuillez sélectionner une note',
+      'enter_your_name': 'Veuillez entrer votre nom',
+      'name_min_length': 'Le nom doit contenir au moins 3 caractères',
+      'loading_notifications': 'Chargement des notifications...',
+      'loading_tracking': 'Chargement du suivi...',
 
       // Empty states
       'empty_orders': 'Vous n\'avez pas encore de commande',
@@ -225,6 +242,81 @@ class AppLocalizations {
 
       // Currency
       'currency': 'FCFA',
+
+      // Home - Services
+      'services': 'Services',
+      'services_count': '6 services',
+      'service_send': 'Envoyer',
+      'service_send_subtitle': 'Livraison rapide',
+      'service_addresses': 'Adresses',
+      'service_addresses_subtitle': 'Carnet d\'adresses',
+      'service_orders': 'Commandes',
+      'service_orders_subtitle': 'Historique',
+      'service_topup': 'Recharger',
+      'service_topup_subtitle': 'Mobile Money',
+      'service_support': 'Support',
+      'service_support_subtitle': '24/7',
+      'service_profile': 'Profil',
+      'service_profile_subtitle': 'Mon compte',
+      'new_delivery': 'Nouvelle livraison',
+      'current_offers': 'Offres du moment',
+      'promo_code_copied': 'Code %s copié !',
+      'promo_applied_snack': 'Code promo %s appliqué !',
+      'referral_validated': 'Parrainage %s validé !',
+
+      // Addresses
+      'my_addresses': 'Mes adresses',
+      'add_address': 'Ajouter une adresse',
+      'no_saved_addresses': 'Aucune adresse sauvegardée',
+      'default_label': 'Par défaut',
+      'set_as_default': 'Définir par défaut',
+      'address_set_default': 'Adresse définie par défaut',
+      'delete_address_title': 'Supprimer l\'adresse ?',
+      'address_deleted': 'Adresse supprimée',
+      'edit_address': 'Modifier l\'adresse',
+      'new_address': 'Nouvelle adresse',
+      'address_type': 'Type d\'adresse',
+      'address_name_label': 'Nom de l\'adresse *',
+      'full_address_label': 'Adresse complète *',
+      'contact_on_site': 'Contact sur place (optionnel)',
+      'contact_name': 'Nom du contact',
+      'contact_phone': 'Téléphone du contact',
+      'instructions': 'Instructions',
+      'set_default_address': 'Définir comme adresse par défaut',
+      'address_added': 'Adresse ajoutée',
+
+      // Jeko Payment
+      'select_payment_method': 'Veuillez sélectionner un mode de paiement',
+      'min_amount_100': 'Montant minimum: 100 FCFA',
+      'cannot_open_payment_link': 'Impossible d\'ouvrir le lien de paiement',
+      'recharge_wallet': 'Recharger mon portefeuille',
+      'mobile_recharge': 'Recharge Mobile Money',
+      'recharge_wallet_subtitle': 'Rechargez votre portefeuille facilement',
+      'quick_amounts': 'Montants rapides',
+      'custom_amount': 'Montant personnalisé',
+      'enter_amount': 'Entrez le montant',
+      'no_payment_methods': 'Aucune méthode de paiement disponible',
+      'secure_payment': 'Paiement sécurisé via JEKO...',
+      'payment_in_progress': 'Paiement en cours',
+      'redirected_to_payment':
+          'Vous avez été redirigé vers votre application de paiement.',
+      'complete_payment_msg':
+          'Complétez le paiement puis revenez ici pour vérifier le statut.',
+      'i_have_paid': 'J\'ai payé',
+      'payment_success_title': 'Paiement réussi',
+
+      // Incoming Orders
+      'incoming_parcels': 'Colis à recevoir',
+      'pending': 'En attente',
+      'on_the_way': 'En route',
+      'in_progress': 'En cours',
+      'no_incoming_parcels': 'Aucun colis à recevoir',
+      'no_incoming_parcels_desc':
+          'Quand quelqu\'un vous enverra un colis, il apparaîtra ici.',
+      'your_courier': 'Votre coursier',
+      'confirmation_code': 'Code de confirmation',
+      'show_code_to_courier': 'Montrez ce code au coursier à la livraison',
+      'track': 'Suivre',
     },
     'en': {
       // General
@@ -264,16 +356,20 @@ class AppLocalizations {
       'invalid_phone': 'Invalid phone number',
       'invalid_otp': 'Invalid OTP code',
       'otp_expired': 'Code expired',
+      'otp_sent_confirmation': 'Verification code sent',
+      'otp_sent_registration': 'Account created! Verification code sent',
 
       // Onboarding
       'onboarding_title_1': 'Fast Delivery',
-      'onboarding_desc_1': 'Get your packages delivered quickly anywhere in Ouagadougou',
+      'onboarding_desc_1':
+          'Get your packages delivered quickly anywhere in Ouagadougou',
       'onboarding_title_2': 'Real-time Tracking',
       'onboarding_desc_2': 'Track your delivery live on the map',
       'onboarding_title_3': 'Easy Payment',
       'onboarding_desc_3': 'Pay easily with Mobile Money',
       'skip': 'Skip',
       'next': 'Next',
+      'previous': 'Previous',
       'get_started': 'Get Started',
 
       // Home
@@ -341,14 +437,19 @@ class AppLocalizations {
       'base_fare': 'Base fare',
       'distance_fare': 'Distance fare',
       'service_fee': 'Service fee',
+      'pay_cash_subtitle': 'Pay on delivery',
+      'pay_mobile_money_subtitle': 'Pay with mobile money',
+      'pay_wave_subtitle': 'Pay with Wave',
 
       // Wallet
       'wallet': 'Wallet',
+      'wallet_title': 'My Wallet',
       'balance': 'Balance',
       'add_funds': 'Add Funds',
       'transactions': 'Transactions',
+      'recent_transactions': 'Recent transactions',
       'transaction_history': 'History',
-      'no_transactions': 'No transactions',
+      'no_transactions': 'No transactions yet',
       'recharge': 'Recharge',
       'recharge_amount': 'Amount to recharge',
       'recharge_success': 'Recharge successful!',
@@ -401,12 +502,20 @@ class AppLocalizations {
 
       // Errors
       'error_network': 'Connection error. Check your internet.',
+      'connection_restored': 'Connection restored',
+      'no_internet': 'No internet connection',
       'error_server': 'Server error. Try again later.',
       'error_timeout': 'Request timed out. Try again.',
       'error_unknown': 'An error occurred.',
       'error_location': 'Unable to get your location.',
       'error_permission': 'Permission denied.',
       'session_expired': 'Session expired. Please login again.',
+      'fill_required_fields': 'Please fill in the required fields',
+      'please_select_rating': 'Please select a rating',
+      'enter_your_name': 'Please enter your name',
+      'name_min_length': 'Name must be at least 3 characters',
+      'loading_notifications': 'Loading notifications...',
+      'loading_tracking': 'Loading tracking...',
 
       // Empty states
       'empty_orders': 'You don\'t have any orders yet',
@@ -416,6 +525,80 @@ class AppLocalizations {
 
       // Currency
       'currency': 'FCFA',
+
+      // Home - Services
+      'services': 'Services',
+      'services_count': '6 services',
+      'service_send': 'Send',
+      'service_send_subtitle': 'Fast delivery',
+      'service_addresses': 'Addresses',
+      'service_addresses_subtitle': 'My address book',
+      'service_orders': 'Orders',
+      'service_orders_subtitle': 'History',
+      'service_topup': 'Top up',
+      'service_topup_subtitle': 'Mobile Money',
+      'service_support': 'Support',
+      'service_support_subtitle': '24/7',
+      'service_profile': 'Profile',
+      'service_profile_subtitle': 'My account',
+      'new_delivery': 'New delivery',
+      'current_offers': 'Current offers',
+      'promo_code_copied': 'Code %s copied!',
+      'promo_applied_snack': 'Promo code %s applied!',
+      'referral_validated': 'Referral %s validated!',
+
+      // Addresses
+      'my_addresses': 'My addresses',
+      'add_address': 'Add address',
+      'no_saved_addresses': 'No saved addresses',
+      'default_label': 'Default',
+      'set_as_default': 'Set as default',
+      'address_set_default': 'Address set as default',
+      'delete_address_title': 'Delete address?',
+      'address_deleted': 'Address deleted',
+      'edit_address': 'Edit address',
+      'new_address': 'New address',
+      'address_type': 'Address type',
+      'address_name_label': 'Address name *',
+      'full_address_label': 'Full address *',
+      'contact_on_site': 'On-site contact (optional)',
+      'contact_name': 'Contact name',
+      'contact_phone': 'Contact phone',
+      'instructions': 'Instructions',
+      'set_default_address': 'Set as default address',
+      'address_added': 'Address added',
+
+      // Jeko Payment
+      'select_payment_method': 'Please select a payment method',
+      'min_amount_100': 'Minimum amount: 100 FCFA',
+      'cannot_open_payment_link': 'Unable to open payment link',
+      'recharge_wallet': 'Top up my wallet',
+      'mobile_recharge': 'Mobile Money Top-up',
+      'recharge_wallet_subtitle': 'Top up your wallet easily',
+      'quick_amounts': 'Quick amounts',
+      'custom_amount': 'Custom amount',
+      'enter_amount': 'Enter amount',
+      'no_payment_methods': 'No payment methods available',
+      'secure_payment': 'Secure payment via JEKO...',
+      'payment_in_progress': 'Payment in progress',
+      'redirected_to_payment': 'You have been redirected to your payment app.',
+      'complete_payment_msg':
+          'Complete the payment then come back here to check the status.',
+      'i_have_paid': 'I have paid',
+      'payment_success_title': 'Payment successful',
+
+      // Incoming Orders
+      'incoming_parcels': 'Incoming parcels',
+      'pending': 'Pending',
+      'on_the_way': 'On the way',
+      'in_progress': 'In progress',
+      'no_incoming_parcels': 'No incoming parcels',
+      'no_incoming_parcels_desc':
+          'When someone sends you a parcel, it will appear here.',
+      'your_courier': 'Your courier',
+      'confirmation_code': 'Confirmation code',
+      'show_code_to_courier': 'Show this code to the courier upon delivery',
+      'track': 'Track',
     },
   };
 
@@ -432,7 +615,7 @@ class AppLocalizations {
   String get yes => translate('yes');
   String get no => translate('no');
   String get search => translate('search');
-  
+
   // Auth
   String get welcome => translate('welcome');
   String get welcomeBack => translate('welcome_back');
@@ -445,7 +628,7 @@ class AppLocalizations {
   String get otpVerification => translate('otp_verification');
   String get invalidPhone => translate('invalid_phone');
   String get invalidOtp => translate('invalid_otp');
-  
+
   // Home
   String get home => translate('home');
   String get hello => translate('hello');
@@ -453,7 +636,7 @@ class AppLocalizations {
   String get recentOrders => translate('recent_orders');
   String get activeOrders => translate('active_orders');
   String get noActiveOrders => translate('no_active_orders');
-  
+
   // Orders
   String get order => translate('order');
   String get orders => translate('orders');
@@ -468,12 +651,12 @@ class AppLocalizations {
   String get cancelled => translate('cancelled');
   String get cancelOrder => translate('cancel_order');
   String get cancelOrderConfirm => translate('cancel_order_confirm');
-  
+
   // Tracking
   String get trackOrder => translate('track_order');
   String get liveTracking => translate('live_tracking');
   String get callCourier => translate('call_courier');
-  
+
   // Payment
   String get payment => translate('payment');
   String get payNow => translate('pay_now');
@@ -481,15 +664,27 @@ class AppLocalizations {
   String get paymentSuccess => translate('payment_success');
   String get paymentFailed => translate('payment_failed');
   String get totalAmount => translate('total_amount');
-  
+  String get payCashSubtitle => translate('pay_cash_subtitle');
+  String get payMobileMoneySubtitle => translate('pay_mobile_money_subtitle');
+  String get payWaveSubtitle => translate('pay_wave_subtitle');
+  String get fillRequiredFields => translate('fill_required_fields');
+  String get pleaseSelectRating => translate('please_select_rating');
+  String get enterYourName => translate('enter_your_name');
+  String get nameMinLength => translate('name_min_length');
+  String get loadingNotifications => translate('loading_notifications');
+  String get loadingTracking => translate('loading_tracking');
+
   // Wallet
   String get wallet => translate('wallet');
+  String get walletTitle => translate('wallet_title');
   String get balance => translate('balance');
   String get addFunds => translate('add_funds');
   String get transactions => translate('transactions');
+  String get recentTransactions => translate('recent_transactions');
+  String get noTransactions => translate('no_transactions');
   String get recharge => translate('recharge');
   String get rechargeSuccess => translate('recharge_success');
-  
+
   // Profile
   String get profile => translate('profile');
   String get editProfile => translate('edit_profile');
@@ -502,20 +697,20 @@ class AppLocalizations {
   String get helpSupport => translate('help_support');
   String get termsConditions => translate('terms_conditions');
   String get privacyPolicy => translate('privacy_policy');
-  
+
   // Support
   String get support => translate('support');
   String get contactUs => translate('contact_us');
   String get faq => translate('faq');
   String get sendMessage => translate('send_message');
   String get messageSent => translate('message_sent');
-  
+
   // Rating
   String get rateCourier => translate('rate_courier');
   String get rateDelivery => translate('rate_delivery');
   String get submitRating => translate('submit_rating');
   String get thanksRating => translate('thanks_rating');
-  
+
   // Errors
   String get errorNetwork => translate('error_network');
   String get errorServer => translate('error_server');
@@ -523,17 +718,29 @@ class AppLocalizations {
   String get errorUnknown => translate('error_unknown');
   String get errorLocation => translate('error_location');
   String get sessionExpired => translate('session_expired');
-  
+
   // Empty states
   String get emptyOrders => translate('empty_orders');
   String get emptyNotifications => translate('empty_notifications');
   String get startOrder => translate('start_order');
-  
+
   // Currency
   String get currency => translate('currency');
+
+  // Home - Services
+  String get services => translate('services');
+  String get servicesCount => translate('services_count');
+  String get newDelivery => translate('new_delivery');
+  String get currentOffers => translate('current_offers');
+  String get myAddresses => translate('my_addresses');
+  String get addAddress => translate('add_address');
+  String get defaultLabel => translate('default_label');
+  String get incomingParcels => translate('incoming_parcels');
+  String get paymentInProgress => translate('payment_in_progress');
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -553,7 +760,7 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
 /// Extension pour accéder facilement aux traductions depuis un BuildContext
 extension AppLocalizationsExtension on BuildContext {
   AppLocalizations get l10n => AppLocalizations.of(this)!;
-  
+
   /// Traduit une clé
   String tr(String key) => l10n.translate(key);
 }

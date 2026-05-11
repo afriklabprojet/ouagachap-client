@@ -1,15 +1,17 @@
 import '../../../../core/network/api_client.dart';
 import '../../domain/entities/saved_address.dart';
+import '../../domain/repositories/address_repository.dart';
 
-class AddressRepository {
+class AddressRepository implements AddressRepositoryInterface {
   final ApiClient _apiClient;
 
   AddressRepository(this._apiClient);
 
   /// Get all saved addresses for the current user
+  @override
   Future<List<SavedAddress>> getAddresses() async {
     try {
-      final response = await _apiClient.get('/v1/addresses');
+      final response = await _apiClient.get('addresses');
       final data = response.data;
 
       if (data['success'] == true) {
@@ -18,7 +20,7 @@ class AddressRepository {
             .map((json) => SavedAddress.fromJson(json as Map<String, dynamic>))
             .toList();
       }
-      
+
       throw Exception(data['message'] ?? 'Failed to load addresses');
     } catch (e) {
       rethrow;
@@ -26,6 +28,7 @@ class AddressRepository {
   }
 
   /// Create a new saved address
+  @override
   Future<SavedAddress> createAddress({
     required String label,
     required String address,
@@ -38,24 +41,27 @@ class AddressRepository {
     String type = 'other',
   }) async {
     try {
-      final response = await _apiClient.post('/v1/addresses', data: {
-        'label': label,
-        'address': address,
-        'latitude': latitude,
-        'longitude': longitude,
-        'contact_name': contactName,
-        'contact_phone': contactPhone,
-        'instructions': instructions,
-        'is_default': isDefault,
-        'type': type,
-      });
-      
+      final response = await _apiClient.post(
+        'addresses',
+        data: {
+          'label': label,
+          'address': address,
+          'latitude': latitude,
+          'longitude': longitude,
+          'contact_name': contactName,
+          'contact_phone': contactPhone,
+          'instructions': instructions,
+          'is_default': isDefault,
+          'type': type,
+        },
+      );
+
       final data = response.data;
 
       if (data['success'] == true) {
         return SavedAddress.fromJson(data['data'] as Map<String, dynamic>);
       }
-      
+
       throw Exception(data['message'] ?? 'Failed to create address');
     } catch (e) {
       rethrow;
@@ -63,6 +69,7 @@ class AddressRepository {
   }
 
   /// Update an existing saved address
+  @override
   Future<SavedAddress> updateAddress({
     required int id,
     String? label,
@@ -87,13 +94,15 @@ class AddressRepository {
       if (isDefault != null) data['is_default'] = isDefault;
       if (type != null) data['type'] = type;
 
-      final response = await _apiClient.put('/v1/addresses/$id', data: data);
+      final response = await _apiClient.put('addresses/$id', data: data);
       final responseData = response.data;
 
       if (responseData['success'] == true) {
-        return SavedAddress.fromJson(responseData['data'] as Map<String, dynamic>);
+        return SavedAddress.fromJson(
+          responseData['data'] as Map<String, dynamic>,
+        );
       }
-      
+
       throw Exception(responseData['message'] ?? 'Failed to update address');
     } catch (e) {
       rethrow;
@@ -101,9 +110,10 @@ class AddressRepository {
   }
 
   /// Delete a saved address
+  @override
   Future<void> deleteAddress(int id) async {
     try {
-      final response = await _apiClient.delete('/v1/addresses/$id');
+      final response = await _apiClient.delete('addresses/$id');
       final data = response.data;
 
       if (data['success'] != true) {
@@ -115,15 +125,16 @@ class AddressRepository {
   }
 
   /// Set an address as default
+  @override
   Future<SavedAddress> setDefaultAddress(int id) async {
     try {
-      final response = await _apiClient.post('/v1/addresses/$id/set-default');
+      final response = await _apiClient.post('addresses/$id/set-default');
       final data = response.data;
 
       if (data['success'] == true) {
         return SavedAddress.fromJson(data['data'] as Map<String, dynamic>);
       }
-      
+
       throw Exception(data['message'] ?? 'Failed to set default address');
     } catch (e) {
       rethrow;

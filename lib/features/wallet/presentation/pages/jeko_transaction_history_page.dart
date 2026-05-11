@@ -43,8 +43,8 @@ class _JekoTransactionHistoryPageState
       if (state.hasMoreHistory &&
           state.status != JekoPaymentStatus.loadingHistory) {
         context.read<JekoPaymentBloc>().add(
-              LoadTransactionHistory(page: state.currentPage + 1),
-            );
+          LoadTransactionHistory(page: state.currentPage + 1),
+        );
       }
     }
   }
@@ -64,6 +64,9 @@ class _JekoTransactionHistoryPageState
         centerTitle: true,
       ),
       body: BlocBuilder<JekoPaymentBloc, JekoPaymentState>(
+        buildWhen: (p, c) =>
+            p.status != c.status ||
+            p.transactionHistory != c.transactionHistory,
         builder: (context, state) {
           if (state.status == JekoPaymentStatus.loadingHistory &&
               state.transactionHistory.isEmpty) {
@@ -77,13 +80,14 @@ class _JekoTransactionHistoryPageState
           return RefreshIndicator(
             onRefresh: () async {
               context.read<JekoPaymentBloc>().add(
-                    const LoadTransactionHistory(page: 1),
-                  );
+                const LoadTransactionHistory(page: 1),
+              );
             },
             child: ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.all(16),
-              itemCount: state.transactionHistory.length +
+              itemCount:
+                  state.transactionHistory.length +
                   (state.hasMoreHistory ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index >= state.transactionHistory.length) {
@@ -107,7 +111,7 @@ class _JekoTransactionHistoryPageState
   }
 
   Widget _buildEmptyState() {
-    return AnimatedEmptyWidget(
+    return const AnimatedEmptyWidget(
       title: 'Aucune transaction',
       subtitle: 'Vos transactions Mobile Money\napparaîtront ici',
     );
@@ -182,8 +186,8 @@ class _JekoTransactionHistoryPageState
                       color: transaction.isSuccessful
                           ? Colors.green
                           : transaction.isFailed
-                              ? Colors.red
-                              : Colors.orange,
+                          ? Colors.red
+                          : Colors.orange,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -199,11 +203,11 @@ class _JekoTransactionHistoryPageState
 
   Widget _buildMethodIcon(JekoTransaction transaction) {
     final colorMap = {
-      'wave': const Color(0xFF1DC3E8),
-      'orange': const Color(0xFFFF6600),
-      'mtn': const Color(0xFFFFCC00),
-      'moov': const Color(0xFF0066CC),
-      'djamo': const Color(0xFF6C5CE7),
+      'wave': AppColors.wavePrimary,
+      'orange': AppColors.orangeMoney,
+      'mtn': AppColors.mtnYellow,
+      'moov': AppColors.moovBlue,
+      'djamo': AppColors.djamoPurple,
     };
 
     final iconMap = {
@@ -224,12 +228,7 @@ class _JekoTransactionHistoryPageState
         color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Center(
-        child: Text(
-          icon,
-          style: const TextStyle(fontSize: 24),
-        ),
-      ),
+      child: Center(child: Text(icon, style: const TextStyle(fontSize: 24))),
     );
   }
 
@@ -332,24 +331,21 @@ class _JekoTransactionHistoryPageState
               transaction.isSuccessful
                   ? Icons.check_circle
                   : transaction.isFailed
-                      ? Icons.cancel
-                      : Icons.hourglass_empty,
+                  ? Icons.cancel
+                  : Icons.hourglass_empty,
               size: 60,
               color: transaction.isSuccessful
                   ? Colors.green
                   : transaction.isFailed
-                      ? Colors.red
-                      : Colors.orange,
+                  ? Colors.red
+                  : Colors.orange,
             ),
             const SizedBox(height: 12),
 
             // Montant
             Text(
               transaction.formattedAmount,
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Text(
@@ -359,8 +355,8 @@ class _JekoTransactionHistoryPageState
                 color: transaction.isSuccessful
                     ? Colors.green
                     : transaction.isFailed
-                        ? Colors.red
-                        : Colors.orange,
+                    ? Colors.red
+                    : Colors.orange,
               ),
             ),
             const SizedBox(height: 24),
@@ -370,7 +366,10 @@ class _JekoTransactionHistoryPageState
             _buildDetailRow('Méthode', transaction.paymentMethodName),
             _buildDetailRow('Référence', transaction.reference),
             if (transaction.fees > 0)
-              _buildDetailRow('Frais', '${transaction.fees.toStringAsFixed(0)} ${transaction.currency}'),
+              _buildDetailRow(
+                'Frais',
+                '${transaction.fees.toStringAsFixed(0)} ${transaction.currency}',
+              ),
             _buildDetailRow(
               'Date',
               DateFormat('dd/MM/yyyy à HH:mm').format(transaction.createdAt),
@@ -378,7 +377,9 @@ class _JekoTransactionHistoryPageState
             if (transaction.executedAt != null)
               _buildDetailRow(
                 'Exécuté le',
-                DateFormat('dd/MM/yyyy à HH:mm').format(transaction.executedAt!),
+                DateFormat(
+                  'dd/MM/yyyy à HH:mm',
+                ).format(transaction.executedAt!),
               ),
 
             const SizedBox(height: 20),
@@ -412,18 +413,11 @@ class _JekoTransactionHistoryPageState
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey.shade600,
-            ),
-          ),
+          Text(label, style: TextStyle(color: Colors.grey.shade600)),
           Flexible(
             child: Text(
               value,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w500),
               textAlign: TextAlign.end,
             ),
           ),

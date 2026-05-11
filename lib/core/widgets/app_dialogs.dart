@@ -153,7 +153,7 @@ class _SuccessDialogState extends State<SuccessDialog>
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -174,7 +174,7 @@ class _SuccessDialogState extends State<SuccessDialog>
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.1),
+                      color: AppColors.success.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -204,7 +204,7 @@ class _SuccessDialogState extends State<SuccessDialog>
               const SizedBox(height: 8),
               Text(
                 widget.message!,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   color: AppColors.textSecondary,
                 ),
@@ -347,7 +347,7 @@ class ConfirmDialog extends StatelessWidget {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: effectiveConfirmColor.withOpacity(0.1),
+                  color: effectiveConfirmColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -371,7 +371,7 @@ class ConfirmDialog extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 message!,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   color: AppColors.textSecondary,
                 ),

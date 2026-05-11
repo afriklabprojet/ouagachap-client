@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../../../../core/di/injection.dart';
 import '../../../../core/services/geocoding_service.dart';
 import '../../../../core/theme/app_colors.dart';
 
@@ -25,9 +26,9 @@ class MapPickerPage extends StatefulWidget {
 
 class _MapPickerPageState extends State<MapPickerPage> {
   final Completer<GoogleMapController> _mapController = Completer();
-  final GeocodingService _geocodingService = GeocodingService();
+  final GeocodingService _geocodingService = getIt<GeocodingService>();
   final TextEditingController _searchController = TextEditingController();
-  
+
   /// Timer de debounce pour la recherche d'adresse.
   /// Évite de bombarder Nominatim à chaque frappe clavier.
   /// 500ms est un bon compromis : assez rapide pour sembler réactif,
@@ -46,7 +47,8 @@ class _MapPickerPageState extends State<MapPickerPage> {
   @override
   void initState() {
     super.initState();
-    _selectedPosition = widget.initialLatitude != null && widget.initialLongitude != null
+    _selectedPosition =
+        widget.initialLatitude != null && widget.initialLongitude != null
         ? LatLng(widget.initialLatitude!, widget.initialLongitude!)
         : _defaultPosition;
     _getAddressFromPosition();
@@ -81,7 +83,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
   /// Annule la recherche précédente si l'utilisateur continue de taper.
   void _onSearchChanged(String query) {
     _searchDebounce?.cancel();
-    
+
     if (query.length < 3) {
       setState(() {
         _searchResults = [];
@@ -89,9 +91,9 @@ class _MapPickerPageState extends State<MapPickerPage> {
       });
       return;
     }
-    
+
     setState(() => _isSearching = true);
-    
+
     _searchDebounce = Timer(const Duration(milliseconds: 500), () {
       _searchAddress(query);
     });
@@ -153,7 +155,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
       if (!mounted) return;
 
       final newPosition = LatLng(position.latitude, position.longitude);
-      
+
       // Déplacer la carte
       final controller = await _mapController.future;
       if (!mounted) return;
@@ -197,7 +199,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
       _searchResults = [];
       _searchController.clear();
     });
-    
+
     FocusScope.of(context).unfocus();
   }
 
@@ -266,7 +268,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -305,7 +307,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -315,7 +317,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
                       shrinkWrap: true,
                       padding: EdgeInsets.zero,
                       itemCount: _searchResults.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (_, _) => const Divider(height: 1),
                       itemBuilder: (context, index) {
                         final result = _searchResults[index];
                         return ListTile(
@@ -387,7 +389,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 10,
                     offset: const Offset(0, -4),
                   ),

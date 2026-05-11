@@ -3,6 +3,9 @@ import 'dart:math';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/bloc/safe_emit_mixin.dart';
+import '../../../../core/constants/app_constants.dart';
+import '../../../../core/utils/error_helpers.dart';
 import '../../domain/usecases/create_order_usecase.dart';
 import '../../domain/usecases/get_orders_usecase.dart';
 import '../../domain/usecases/get_order_details_usecase.dart';
@@ -12,7 +15,7 @@ import '../../domain/usecases/rate_courier.dart';
 import 'order_event.dart';
 import 'order_state.dart';
 
-class OrderBloc extends Bloc<OrderEvent, OrderState> {
+class OrderBloc extends Bloc<OrderEvent, OrderState> with SafeEmitMixin {
   final CreateOrderUseCase createOrderUseCase;
   final GetOrdersUseCase getOrdersUseCase;
   final GetOrderDetailsUseCase getOrderDetailsUseCase;
@@ -33,10 +36,19 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     // droppable() → ignore les taps rapides pendant qu'une opération est en cours
     on<CreateOrderRequested>(_onCreateOrderRequested, transformer: droppable());
     on<GetOrdersRequested>(_onGetOrdersRequested, transformer: restartable());
-    on<GetOrderDetailsRequested>(_onGetOrderDetailsRequested, transformer: restartable());
+    on<GetOrderDetailsRequested>(
+      _onGetOrderDetailsRequested,
+      transformer: restartable(),
+    );
     on<CancelOrderRequested>(_onCancelOrderRequested, transformer: droppable());
-    on<CalculatePriceRequested>(_onCalculatePriceRequested, transformer: restartable());
-    on<StartOrderTrackingRequested>(_onStartOrderTrackingRequested, transformer: restartable());
+    on<CalculatePriceRequested>(
+      _onCalculatePriceRequested,
+      transformer: restartable(),
+    );
+    on<StartOrderTrackingRequested>(
+      _onStartOrderTrackingRequested,
+      transformer: restartable(),
+    );
     on<StopOrderTrackingRequested>(_onStopOrderTrackingRequested);
     on<RateCourierRequested>(_onRateCourierRequested, transformer: droppable());
   }
@@ -65,7 +77,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       );
       emit(OrderCreated(order: order));
     } catch (e) {
-      emit(OrderError(message: _extractErrorMessage(e)));
+      emit(OrderError(message: extractUserFriendlyError(e)));
     }
   }
 
@@ -87,20 +99,24 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       );
 
       if (event.refresh || event.page == 1) {
-        emit(OrdersLoaded(
-          orders: orders,
-          hasMore: orders.length >= event.perPage,
-          currentPage: event.page,
-        ));
+        emit(
+          OrdersLoaded(
+            orders: orders,
+            hasMore: orders.length >= event.perPage,
+            currentPage: event.page,
+          ),
+        );
       } else if (currentState is OrdersLoaded) {
-        emit(OrdersLoaded(
-          orders: [...currentState.orders, ...orders],
-          hasMore: orders.length >= event.perPage,
-          currentPage: event.page,
-        ));
+        emit(
+          OrdersLoaded(
+            orders: [...currentState.orders, ...orders],
+            hasMore: orders.length >= event.perPage,
+            currentPage: event.page,
+          ),
+        );
       }
     } catch (e) {
-      emit(OrderError(message: _extractErrorMessage(e)));
+      emit(OrderError(message: extractUserFriendlyError(e)));
     }
   }
 
@@ -114,7 +130,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       final order = await getOrderDetailsUseCase(event.orderId);
       emit(OrderDetailsLoaded(order: order));
     } catch (e) {
-      emit(OrderError(message: _extractErrorMessage(e)));
+      emit(OrderError(message: extractUserFriendlyError(e)));
     }
   }
 
@@ -128,7 +144,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       await cancelOrderUseCase(event.orderId, reason: event.reason);
       emit(OrderCancelled(orderId: event.orderId));
     } catch (e) {
-      emit(OrderError(message: _extractErrorMessage(e)));
+      emit(OrderError(message: extractUserFriendlyError(e)));
     }
   }
 
@@ -145,24 +161,29 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         deliveryLongitude: event.deliveryLongitude,
       );
 
-      emit(PriceCalculated(
-        price: estimate['total_price'] ?? 0,
-        distance: estimate['distance_km'] ?? 0,
-        basePrice: estimate['base_price'] ?? 0,
-        distancePrice: estimate['distance_price'] ?? 0,
-        commissionAmount: estimate['commission_amount'] ?? 0,
-        courierEarnings: estimate['courier_earnings'] ?? 0,
-      ));
+      emit(
+        PriceCalculated(
+          price: estimate['total_price'] ?? 0,
+          distance: estimate['distance_km'] ?? 0,
+          basePrice: estimate['base_price'] ?? 0,
+          distancePrice: estimate['distance_price'] ?? 0,
+          commissionAmount: estimate['commission_amount'] ?? 0,
+          courierEarnings: estimate['courier_earnings'] ?? 0,
+          isSurge: estimate['is_surge'] == true,
+          surgeMultiplier: (estimate['surge_multiplier'] ?? 1.0).toDouble(),
+        ),
+      );
     } catch (e) {
-      // Fallback local si l'API est indisponible
+      // Fallback local si l'API est indisponible (utilise les constantes par défaut)
       final distance = _calculateDistance(
         event.pickupLatitude,
         event.pickupLongitude,
         event.deliveryLatitude,
         event.deliveryLongitude,
       );
-      final price = 500.0 + (distance * 200.0);
-      emit(PriceCalculated(price: price, distance: distance));
+      final price =
+          AppConstants.baseFare + (distance * AppConstants.pricePerKm);
+      emit(PriceCalculated(price: price.toDouble(), distance: distance));
     }
   }
 
@@ -178,7 +199,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       final order = await getOrderDetailsUseCase(event.orderId);
       emit(OrderTracking(order: order));
     } catch (e) {
-      emit(OrderError(message: _extractErrorMessage(e)));
+      emit(OrderError(message: extractUserFriendlyError(e)));
     }
   }
 
@@ -188,6 +209,13 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
   ) async {
     await _trackingSubscription?.cancel();
     _trackingSubscription = null;
+  }
+
+  @override
+  Future<void> close() async {
+    await _trackingSubscription?.cancel();
+    _trackingSubscription = null;
+    return super.close();
   }
 
   double _calculateDistance(
@@ -200,7 +228,8 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     final dLat = _toRadians(lat2 - lat1);
     final dLon = _toRadians(lon2 - lon1);
 
-    final a = sin(dLat / 2) * sin(dLat / 2) +
+    final a =
+        sin(dLat / 2) * sin(dLat / 2) +
         cos(_toRadians(lat1)) *
             cos(_toRadians(lat2)) *
             sin(dLon / 2) *
@@ -212,21 +241,6 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
 
   double _toRadians(double degrees) {
     return degrees * pi / 180;
-  }
-
-  String _extractErrorMessage(dynamic error) {
-    if (error.toString().contains('DioException')) {
-      if (error.toString().contains('404')) {
-        return 'Commande non trouvée';
-      }
-      if (error.toString().contains('422')) {
-        return 'Données invalides';
-      }
-      if (error.toString().contains('connection')) {
-        return 'Erreur de connexion. Vérifiez votre internet.';
-      }
-    }
-    return 'Une erreur est survenue. Réessayez.';
   }
 
   Future<void> _onRateCourierRequested(
@@ -245,13 +259,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       emit(CourierRated(order: order));
       emit(OrderDetailsLoaded(order: order));
     } catch (e) {
-      emit(OrderError(message: _extractErrorMessage(e)));
+      emit(OrderError(message: extractUserFriendlyError(e)));
     }
-  }
-
-  @override
-  Future<void> close() {
-    _trackingSubscription?.cancel();
-    return super.close();
   }
 }

@@ -4,7 +4,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 
 /// Service de gestion de la connectivité réseau.
-/// 
+///
 /// **Pourquoi un ping HTTP en plus de connectivity_plus ?**
 /// `connectivity_plus` vérifie uniquement si le WiFi ou la 3G/4G est activé.
 /// En Afrique, il est courant d'avoir la 3G activée sans crédit data,
@@ -13,7 +13,7 @@ import 'package:flutter/foundation.dart';
 class ConnectivityService extends ChangeNotifier {
   final Connectivity _connectivity = Connectivity();
   StreamSubscription<List<ConnectivityResult>>? _subscription;
-  
+
   bool _isOnline = true;
   bool _hasInternetAccess = true;
   ConnectivityResult _connectionType = ConnectivityResult.none;
@@ -21,10 +21,10 @@ class ConnectivityService extends ChangeNotifier {
   /// Vrai si le réseau est activé ET Internet est accessible
   bool get isOnline => _isOnline && _hasInternetAccess;
   bool get isOffline => !isOnline;
-  
+
   /// Type de connexion brut (WiFi, Mobile, etc.)
   ConnectivityResult get connectionType => _connectionType;
-  
+
   /// Type de connexion lisible
   String get connectionTypeString {
     switch (_connectionType) {
@@ -67,37 +67,41 @@ class ConnectivityService extends ChangeNotifier {
       (r) => r != ConnectivityResult.none,
       orElse: () => ConnectivityResult.none,
     );
-    
+
     final wasOnline = isOnline;
     _connectionType = result;
     _isOnline = result != ConnectivityResult.none;
-    
+
     // Si le réseau semble actif, vérifier l'accès Internet réel
     if (_isOnline) {
       _hasInternetAccess = await _checkInternetAccess();
     } else {
       _hasInternetAccess = false;
     }
-    
+
     // Notifier seulement si le statut a changé
     if (wasOnline != isOnline) {
-      debugPrint('🌐 Connectivity: ${isOnline ? "en ligne" : "hors ligne"} '
-          '(type: $connectionTypeString, internet: $_hasInternetAccess)');
+      debugPrint(
+        '🌐 Connectivity: ${isOnline ? "en ligne" : "hors ligne"} '
+        '(type: $connectionTypeString, internet: $_hasInternetAccess)',
+      );
       notifyListeners();
     }
   }
 
   /// Vérifie l'accès réel à Internet via un lookup DNS rapide.
-  /// 
+  ///
   /// Utilise une résolution DNS vers google.com (très léger ~100 bytes)
   /// plutôt qu'un HTTP GET complet, pour minimiser la consommation data.
   /// Timeout de 5s pour ne pas bloquer sur 3G lent.
   Future<bool> _checkInternetAccess() async {
     try {
-      final result = await InternetAddress.lookup('google.com')
-          .timeout(const Duration(seconds: 5));
+      final result = await InternetAddress.lookup(
+        'google.com',
+      ).timeout(const Duration(seconds: 5));
       return result.isNotEmpty && result.first.rawAddress.isNotEmpty;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[Connectivity] Connection check failed: $e');
       return false;
     }
   }

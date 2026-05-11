@@ -5,7 +5,6 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/animations.dart';
 import '../bloc/live_tracking_bloc.dart';
 import '../bloc/live_tracking_event.dart';
 import '../bloc/live_tracking_state.dart';
@@ -37,10 +36,12 @@ class LiveTrackingPage extends StatefulWidget {
   State<LiveTrackingPage> createState() => _LiveTrackingPageState();
 }
 
-class _LiveTrackingPageState extends State<LiveTrackingPage> {
+class _LiveTrackingPageState extends State<LiveTrackingPage>
+    with WidgetsBindingObserver {
   final Completer<GoogleMapController> _mapController = Completer();
-  Set<Marker> _markers = {};
-  Set<Polyline> _polylines = {};
+  final _markersNotifier = ValueNotifier<Set<Marker>>({});
+  final _polylinesNotifier = ValueNotifier<Set<Polyline>>({});
+  late final BitmapDescriptor _courierIcon;
 
   // Position par défaut : Ouagadougou
   static const LatLng _defaultPosition = LatLng(12.3714, -1.5197);
@@ -48,11 +49,16 @@ class _LiveTrackingPageState extends State<LiveTrackingPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Mettre en cache l'icône du coursier (créée une seule fois)
+    _courierIcon = BitmapDescriptor.defaultMarkerWithHue(
+      BitmapDescriptor.hueOrange,
+    );
+
     // Démarrer le suivi
-    context.read<LiveTrackingBloc>().add(StartTracking(
-          orderId: widget.orderId,
-          trackingCode: widget.trackingCode,
-        ));
+    context.read<LiveTrackingBloc>().add(
+      StartTracking(orderId: widget.orderId, trackingCode: widget.trackingCode),
+    );
 
     // Initialiser les marqueurs statiques
     _initStaticMarkers();
@@ -60,10 +66,20 @@ class _LiveTrackingPageState extends State<LiveTrackingPage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _markersNotifier.dispose();
+    _polylinesNotifier.dispose();
     // Disposer le GoogleMapController pour éviter les fuites mémoire
     _mapController.future.then((c) => c.dispose()).catchError((_) {});
     context.read<LiveTrackingBloc>().add(const StopTracking());
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      context.read<LiveTrackingBloc>().add(const ReconnectTracking());
+    }
   }
 
   void _initStaticMarkers() {
@@ -71,25 +87,31 @@ class _LiveTrackingPageState extends State<LiveTrackingPage> {
 
     // Marqueur point de récupération
     if (widget.pickupLatitude != null && widget.pickupLongitude != null) {
-      markers.add(Marker(
-        markerId: const MarkerId('pickup'),
-        position: LatLng(widget.pickupLatitude!, widget.pickupLongitude!),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-        infoWindow: const InfoWindow(title: 'Point de récupération'),
-      ));
+      markers.add(
+        Marker(
+          markerId: const MarkerId('pickup'),
+          position: LatLng(widget.pickupLatitude!, widget.pickupLongitude!),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueGreen,
+          ),
+          infoWindow: const InfoWindow(title: 'Point de récupération'),
+        ),
+      );
     }
 
     // Marqueur point de livraison
     if (widget.deliveryLatitude != null && widget.deliveryLongitude != null) {
-      markers.add(Marker(
-        markerId: const MarkerId('delivery'),
-        position: LatLng(widget.deliveryLatitude!, widget.deliveryLongitude!),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        infoWindow: const InfoWindow(title: 'Point de livraison'),
-      ));
+      markers.add(
+        Marker(
+          markerId: const MarkerId('delivery'),
+          position: LatLng(widget.deliveryLatitude!, widget.deliveryLongitude!),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          infoWindow: const InfoWindow(title: 'Point de livraison'),
+        ),
+      );
     }
 
-    setState(() => _markers = markers);
+    _markersNotifier.value = markers;
   }
 
   void _updateCourierMarker(LiveTrackingState state) {
@@ -101,18 +123,22 @@ class _LiveTrackingPageState extends State<LiveTrackingPage> {
     );
 
     // Mettre à jour les marqueurs
-    final updatedMarkers = _markers.where((m) => m.markerId.value != 'courier').toSet();
-    updatedMarkers.add(Marker(
-      markerId: const MarkerId('courier'),
-      position: courierPosition,
-      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
-      infoWindow: InfoWindow(
-        title: widget.courierName ?? 'Coursier',
-        snippet: state.statusMessage,
+    final updatedMarkers = _markersNotifier.value
+        .where((m) => m.markerId.value != 'courier')
+        .toSet();
+    updatedMarkers.add(
+      Marker(
+        markerId: const MarkerId('courier'),
+        position: courierPosition,
+        icon: _courierIcon,
+        infoWindow: InfoWindow(
+          title: widget.courierName ?? 'Coursier',
+          snippet: state.statusMessage,
+        ),
+        rotation: state.courierHeading ?? 0,
+        flat: true,
       ),
-      rotation: state.courierHeading ?? 0,
-      flat: true,
-    ));
+    );
 
     // Mettre à jour la polyline du trajet
     if (state.routeHistory.isNotEmpty) {
@@ -120,7 +146,7 @@ class _LiveTrackingPageState extends State<LiveTrackingPage> {
           .map((p) => LatLng(p.latitude, p.longitude))
           .toList();
 
-      _polylines = {
+      _polylinesNotifier.value = {
         Polyline(
           polylineId: const PolylineId('route'),
           points: points,
@@ -130,7 +156,7 @@ class _LiveTrackingPageState extends State<LiveTrackingPage> {
       };
     }
 
-    setState(() => _markers = updatedMarkers);
+    _markersNotifier.value = updatedMarkers;
 
     // Centrer la carte sur le coursier
     _animateCameraToPosition(courierPosition);
@@ -144,18 +170,22 @@ class _LiveTrackingPageState extends State<LiveTrackingPage> {
   }
 
   Future<void> _fitAllMarkers() async {
-    if (_markers.length < 2 || !mounted) return;
+    if (_markersNotifier.value.length < 2 || !mounted) return;
 
     final controller = await _mapController.future;
     if (!mounted) return;
-    
+
     double minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
-    
-    for (final marker in _markers) {
+
+    for (final marker in _markersNotifier.value) {
       if (marker.position.latitude < minLat) minLat = marker.position.latitude;
       if (marker.position.latitude > maxLat) maxLat = marker.position.latitude;
-      if (marker.position.longitude < minLng) minLng = marker.position.longitude;
-      if (marker.position.longitude > maxLng) maxLng = marker.position.longitude;
+      if (marker.position.longitude < minLng) {
+        minLng = marker.position.longitude;
+      }
+      if (marker.position.longitude > maxLng) {
+        maxLng = marker.position.longitude;
+      }
     }
 
     final bounds = LatLngBounds(
@@ -178,6 +208,18 @@ class _LiveTrackingPageState extends State<LiveTrackingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: BlocConsumer<LiveTrackingBloc, LiveTrackingState>(
+        listenWhen: (p, c) =>
+            p.courierLatitude != c.courierLatitude ||
+            p.courierLongitude != c.courierLongitude ||
+            p.routeHistory.length != c.routeHistory.length ||
+            p.errorMessage != c.errorMessage,
+        buildWhen: (p, c) =>
+            p.connectionStatus != c.connectionStatus ||
+            p.hasCourierLocation != c.hasCourierLocation ||
+            p.statusMessage != c.statusMessage ||
+            p.estimatedMinutes != c.estimatedMinutes ||
+            p.distanceKm != c.distanceKm ||
+            p.orderStatus != c.orderStatus,
         listener: (context, state) {
           _updateCourierMarker(state);
 
@@ -194,29 +236,40 @@ class _LiveTrackingPageState extends State<LiveTrackingPage> {
         builder: (context, state) {
           return Stack(
             children: [
-              // Carte Google Maps
-              GoogleMap(
-                initialCameraPosition: CameraPosition(
-                  target: widget.pickupLatitude != null
-                      ? LatLng(widget.pickupLatitude!, widget.pickupLongitude!)
-                      : _defaultPosition,
-                  zoom: 14,
+              // Carte Google Maps — wrapped in ListenableBuilder so only
+              // the map re-renders when markers/polylines change, NOT the
+              // entire BlocConsumer tree (header, FABs, info card).
+              ListenableBuilder(
+                listenable: Listenable.merge([
+                  _markersNotifier,
+                  _polylinesNotifier,
+                ]),
+                builder: (context, _) => GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: widget.pickupLatitude != null
+                        ? LatLng(
+                            widget.pickupLatitude!,
+                            widget.pickupLongitude!,
+                          )
+                        : _defaultPosition,
+                    zoom: 14,
+                  ),
+                  onMapCreated: (controller) {
+                    if (!_mapController.isCompleted) {
+                      _mapController.complete(controller);
+                    }
+                    // Ajuster la vue après création
+                    Future.delayed(const Duration(milliseconds: 500), () {
+                      if (mounted) _fitAllMarkers();
+                    });
+                  },
+                  markers: _markersNotifier.value,
+                  polylines: _polylinesNotifier.value,
+                  myLocationEnabled: true,
+                  myLocationButtonEnabled: false,
+                  zoomControlsEnabled: false,
+                  mapToolbarEnabled: false,
                 ),
-                onMapCreated: (controller) {
-                  if (!_mapController.isCompleted) {
-                    _mapController.complete(controller);
-                  }
-                  // Ajuster la vue après création
-                  Future.delayed(const Duration(milliseconds: 500), () {
-                    if (mounted) _fitAllMarkers();
-                  });
-                },
-                markers: _markers,
-                polylines: _polylines,
-                myLocationEnabled: true,
-                myLocationButtonEnabled: false,
-                zoomControlsEnabled: false,
-                mapToolbarEnabled: false,
               ),
 
               // Header avec bouton retour
@@ -227,13 +280,16 @@ class _LiveTrackingPageState extends State<LiveTrackingPage> {
                 child: SafeArea(
                   child: Container(
                     margin: const EdgeInsets.all(16),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(30),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -250,9 +306,9 @@ class _LiveTrackingPageState extends State<LiveTrackingPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
+                              const Text(
                                 'Suivi en direct',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
                                 ),
@@ -292,7 +348,10 @@ class _LiveTrackingPageState extends State<LiveTrackingPage> {
                       FloatingActionButton.small(
                         heroTag: 'courier',
                         onPressed: () => _animateCameraToPosition(
-                          LatLng(state.courierLatitude!, state.courierLongitude!),
+                          LatLng(
+                            state.courierLatitude!,
+                            state.courierLongitude!,
+                          ),
                         ),
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -309,9 +368,55 @@ class _LiveTrackingPageState extends State<LiveTrackingPage> {
                 bottom: 0,
                 child: _buildInfoCard(state),
               ),
+
+              // Bannière de déconnexion WebSocket — visible dès que la
+              // connexion est perdue, pour ne pas laisser l'utilisateur
+              // croire que le coursier est immobile.
+              if (state.connectionStatus ==
+                      TrackingConnectionStatus.reconnecting ||
+                  state.connectionStatus == TrackingConnectionStatus.error ||
+                  state.connectionStatus ==
+                      TrackingConnectionStatus.disconnected)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: kToolbarHeight + MediaQuery.of(context).padding.top,
+                  child: _buildDisconnectionBanner(state.connectionStatus),
+                ),
             ],
           );
         },
+      ),
+    );
+  }
+
+  /// Bannière pleine largeur affichée quand le WebSocket est déconnecté.
+  /// Évite que l'utilisateur croie que le coursier est immobile alors
+  /// que la connexion temps réel est perdue.
+  Widget _buildDisconnectionBanner(TrackingConnectionStatus status) {
+    final isReconnecting = status == TrackingConnectionStatus.reconnecting;
+    return Material(
+      color: isReconnecting ? Colors.orange.shade700 : Colors.red.shade700,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Icon(
+              isReconnecting ? Icons.wifi_protected_setup : Icons.wifi_off,
+              color: Colors.white,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                isReconnecting
+                    ? 'Reconnexion en cours… La position peut être obsolète.'
+                    : 'Connexion perdue. La position du coursier n\'est plus mise à jour.',
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -364,7 +469,7 @@ class _LiveTrackingPageState extends State<LiveTrackingPage> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, -4),
           ),
@@ -394,7 +499,9 @@ class _LiveTrackingPageState extends State<LiveTrackingPage> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(state.orderStatus).withOpacity(0.1),
+                      color: _getStatusColor(
+                        state.orderStatus,
+                      ).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -440,9 +547,9 @@ class _LiveTrackingPageState extends State<LiveTrackingPage> {
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    CircleAvatar(
+                    const CircleAvatar(
                       backgroundColor: AppColors.primaryLight,
-                      child: const Icon(Icons.person, color: AppColors.primary),
+                      child: Icon(Icons.person, color: AppColors.primary),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -451,9 +558,7 @@ class _LiveTrackingPageState extends State<LiveTrackingPage> {
                         children: [
                           Text(
                             widget.courierName!,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           Text(
                             'Votre coursier',
@@ -469,7 +574,7 @@ class _LiveTrackingPageState extends State<LiveTrackingPage> {
                       IconButton(
                         onPressed: _callCourier,
                         style: IconButton.styleFrom(
-                          backgroundColor: Colors.green.withOpacity(0.1),
+                          backgroundColor: Colors.green.withValues(alpha: 0.1),
                         ),
                         icon: const Icon(Icons.phone, color: Colors.green),
                       ),

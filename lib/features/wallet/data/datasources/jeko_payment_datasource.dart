@@ -1,3 +1,7 @@
+import 'dart:math';
+
+import 'package:dio/dio.dart';
+
 import '../../../../core/network/api_client.dart';
 
 /// Modèle pour une méthode de paiement JEKO
@@ -168,6 +172,18 @@ class JekoPaymentRemoteDataSourceImpl implements JekoPaymentRemoteDataSource {
     }
   }
 
+  /// Génère une clé d'idempotence unique (16 octets hex, CSPRNG).
+  ///
+  /// Utilisée comme header `Idempotency-Key` sur les POST de paiement.
+  /// Une clé par appel : si le réseau coupe et que l'utilisateur relance
+  /// manuellement, une nouvelle clé est générée → nouvelle tentative sûre.
+  /// Le backend doit rejeter toute requête portant une clé déjà traitée.
+  String _generateIdempotencyKey() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  }
+
   @override
   Future<JekoPaymentResult> initiateWalletRecharge({
     required double amount,
@@ -179,8 +195,11 @@ class JekoPaymentRemoteDataSourceImpl implements JekoPaymentRemoteDataSource {
         'amount': amount,
         'payment_method': paymentMethod,
       },
+      options: Options(
+        headers: {'Idempotency-Key': _generateIdempotencyKey()},
+      ),
     );
-    
+
     return JekoPaymentResult.fromJson(response.data);
   }
 
@@ -195,8 +214,11 @@ class JekoPaymentRemoteDataSourceImpl implements JekoPaymentRemoteDataSource {
         'order_id': orderId,
         'payment_method': paymentMethod,
       },
+      options: Options(
+        headers: {'Idempotency-Key': _generateIdempotencyKey()},
+      ),
     );
-    
+
     return JekoPaymentResult.fromJson(response.data);
   }
 

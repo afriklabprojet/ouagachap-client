@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/app_localizations.dart';
+
 class RatingDialog extends StatefulWidget {
   final Function(int rating, String? review, List<String> tags) onSubmit;
   final String courierName;
 
   const RatingDialog({
-    Key? key,
+    super.key,
     required this.onSubmit,
     required this.courierName,
-  }) : super(key: key);
+  });
 
   @override
   State<RatingDialog> createState() => _RatingDialogState();
@@ -56,8 +58,8 @@ class _RatingDialogState extends State<RatingDialog> {
   void _submit() {
     if (_rating == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez sélectionner une note'),
+        SnackBar(
+          content: Text(context.l10n.pleaseSelectRating),
           backgroundColor: Colors.red,
         ),
       );
@@ -65,7 +67,11 @@ class _RatingDialogState extends State<RatingDialog> {
     }
 
     setState(() => _isSubmitting = true);
-    widget.onSubmit(_rating, _reviewController.text.trim(), _selectedTags.toList());
+    widget.onSubmit(
+      _rating,
+      _reviewController.text.trim(),
+      _selectedTags.toList(),
+    );
   }
 
   @override
@@ -82,9 +88,9 @@ class _RatingDialogState extends State<RatingDialog> {
               // Titre
               Text(
                 'Noter le coursier',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
@@ -101,12 +107,15 @@ class _RatingDialogState extends State<RatingDialog> {
                 children: List.generate(5, (index) {
                   final starValue = index + 1;
                   return GestureDetector(
-                    onTap: _isSubmitting ? null : () {
-                      setState(() {
-                        _rating = starValue;
-                        _selectedTags.clear(); // Reset tags on rating change
-                      });
-                    },
+                    onTap: _isSubmitting
+                        ? null
+                        : () {
+                            setState(() {
+                              _rating = starValue;
+                              _selectedTags
+                                  .clear(); // Reset tags on rating change
+                            });
+                          },
                     child: Icon(
                       starValue <= _rating ? Icons.star : Icons.star_border,
                       size: 48,
@@ -121,9 +130,9 @@ class _RatingDialogState extends State<RatingDialog> {
                 const SizedBox(height: 8),
                 Text(
                   _getRatingLabel(_rating),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -133,9 +142,9 @@ class _RatingDialogState extends State<RatingDialog> {
               if (_availableTags.isNotEmpty) ...[
                 Text(
                   'Sélectionnez des tags (optionnel)',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 12),
                 Wrap(
@@ -146,18 +155,20 @@ class _RatingDialogState extends State<RatingDialog> {
                     return FilterChip(
                       label: Text(entry.value),
                       selected: isSelected,
-                      onSelected: _isSubmitting ? null : (selected) {
-                        setState(() {
-                          if (selected) {
-                            _selectedTags.add(entry.key);
-                          } else {
-                            _selectedTags.remove(entry.key);
-                          }
-                        });
-                      },
+                      onSelected: _isSubmitting
+                          ? null
+                          : (selected) {
+                              setState(() {
+                                if (selected) {
+                                  _selectedTags.add(entry.key);
+                                } else {
+                                  _selectedTags.remove(entry.key);
+                                }
+                              });
+                            },
                       selectedColor: _rating >= 4
-                          ? Colors.green.withOpacity(0.2)
-                          : Colors.orange.withOpacity(0.2),
+                          ? Colors.green.withValues(alpha: 0.2)
+                          : Colors.orange.withValues(alpha: 0.2),
                     );
                   }).toList(),
                 ),
@@ -184,7 +195,9 @@ class _RatingDialogState extends State<RatingDialog> {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+                      onPressed: _isSubmitting
+                          ? null
+                          : () => Navigator.pop(context),
                       child: const Text('Annuler'),
                     ),
                   ),
@@ -198,7 +211,9 @@ class _RatingDialogState extends State<RatingDialog> {
                               width: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
                               ),
                             )
                           : const Text('Envoyer'),

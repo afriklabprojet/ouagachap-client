@@ -80,3 +80,11 @@ class PaymentErrorCallback extends JekoPaymentEvent {
 
 /// Réinitialiser l'état
 class ResetPaymentState extends JekoPaymentEvent {}
+
+/// Vérifier si une transaction est en attente depuis la dernière session.
+///
+/// À dispatcher au lancement de la page de recharge ou au retour au premier
+/// plan : si un `transactionId` a été persisté lors d'une session précédente
+/// (deep link manqué ou app tuée pendant le paiement), le statut est
+/// automatiquement re-vérifié.
+class RecoverPendingPayment extends JekoPaymentEvent {}

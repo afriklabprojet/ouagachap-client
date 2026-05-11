@@ -8,27 +8,27 @@ class AppColors {
   // ==========================================================================
   // COULEURS PRINCIPALES - OUAGA CHAP
   // ==========================================================================
-  
+
   /// Rouge OUAGA CHAP - Couleur principale
   static const Color primary = Color(0xFFE31E24);
   static const Color primaryLight = Color(0xFFFF5252);
   static const Color primaryDark = Color(0xFFB71C1C);
-  
+
   /// Jaune OUAGA CHAP - Couleur secondaire/accent
   static const Color secondary = Color(0xFFF7C72C);
   static const Color secondaryLight = Color(0xFFFFE082);
   static const Color secondaryDark = Color(0xFFF9A825);
-  
+
   /// Couleur d'accent (jaune pour les éléments interactifs)
   static const Color accent = Color(0xFFF7C72C);
-  
+
   // ==========================================================================
   // COULEURS DE FOND
   // ==========================================================================
   static const Color background = Color(0xFFF8FAFC);
   static const Color surface = Color(0xFFFFFFFF);
   static const Color surfaceVariant = Color(0xFFF1F5F9);
-  
+
   // ==========================================================================
   // COULEURS DE TEXTE
   // ==========================================================================
@@ -37,7 +37,7 @@ class AppColors {
   static const Color textTertiary = Color(0xFF94A3B8);
   static const Color textOnPrimary = Color(0xFFFFFFFF);
   static const Color textOnSecondary = Color(0xFF1E293B); // Texte sur jaune
-  
+
   // ==========================================================================
   // COULEURS DE STATUT
   // ==========================================================================
@@ -49,49 +49,49 @@ class AppColors {
   static const Color errorLight = Color(0xFFFEE2E2);
   static const Color info = Color(0xFF3B82F6);
   static const Color infoLight = Color(0xFFDBEAFE);
-  
+
   // ==========================================================================
   // COULEURS DES STATUTS DE COMMANDE
   // ==========================================================================
-  static const Color statusPending = Color(0xFFF7C72C);      // Jaune - En attente
-  static const Color statusAccepted = Color(0xFF3B82F6);     // Bleu - Acceptée
-  static const Color statusPickedUp = Color(0xFF8B5CF6);     // Violet - Récupérée
-  static const Color statusInTransit = Color(0xFFE31E24);    // Rouge - En transit
-  static const Color statusDelivered = Color(0xFF10B981);    // Vert - Livrée
-  static const Color statusCancelled = Color(0xFF6B7280);    // Gris - Annulée
-  
+  static const Color statusPending = Color(0xFFF7C72C); // Jaune - En attente
+  static const Color statusAccepted = Color(0xFF3B82F6); // Bleu - Acceptée
+  static const Color statusPickedUp = Color(0xFF8B5CF6); // Violet - Récupérée
+  static const Color statusInTransit = Color(0xFFE31E24); // Rouge - En transit
+  static const Color statusDelivered = Color(0xFF10B981); // Vert - Livrée
+  static const Color statusCancelled = Color(0xFF6B7280); // Gris - Annulée
+
   // ==========================================================================
   // COULEURS DE BORDURE ET OMBRE
   // ==========================================================================
   static const Color border = Color(0xFFE2E8F0);
   static const Color borderLight = Color(0xFFF1F5F9);
   static const Color shadow = Color(0x1A000000);
-  
+
   // ==========================================================================
   // DÉGRADÉS OUAGA CHAP
   // ==========================================================================
-  
+
   /// Dégradé principal (rouge)
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [primary, primaryDark],
   );
-  
+
   /// Dégradé secondaire (jaune)
   static const LinearGradient secondaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [secondary, secondaryDark],
   );
-  
+
   /// Dégradé hero (rouge vers rouge foncé)
   static const LinearGradient heroGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [primary, primaryDark],
   );
-  
+
   /// Dégradé splash/login (rouge et jaune)
   static const LinearGradient brandGradient = LinearGradient(
     begin: Alignment.topLeft,
@@ -99,24 +99,87 @@ class AppColors {
     colors: [primary, secondary],
   );
 
+  /// Dégradé wallet/banner sombre
+  static const LinearGradient walletGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [darkBackground, darkSurface],
+  );
+
   // ==========================================================================
   // COULEURS MODE SOMBRE
   // ==========================================================================
-  
+
+  // ==========================================================================
+  // OPÉRATEURS DE PAIEMENT
+  // ==========================================================================
+
+  static const Color wavePrimary = Color(0xFF1DC3E8);
+  static const Color waveLight = Color(0xFF1DC6FF);
+  static const Color orangeMoney = Color(0xFFFF6600);
+  static const Color mtnYellow = Color(0xFFFFCC00);
+  static const Color moovBlue = Color(0xFF0066CC);
+  static const Color djamoPurple = Color(0xFF6C5CE7);
+  static const Color djamoLight = Color(0xFF7B61FF);
+
+  // ==========================================================================
+  // RÉSEAUX SOCIAUX
+  // ==========================================================================
+
+  static const Color facebookBlue = Color(0xFF1877F2);
+  static const Color instagramPink = Color(0xFFE4405F);
+  static const Color twitterBlue = Color(0xFF1DA1F2);
+
+  // ==========================================================================
+  // DÉGRADÉS PROMO / ONBOARDING
+  // ==========================================================================
+
+  static const List<Color> promoGradientPurple = [
+    Color(0xFF667eea),
+    Color(0xFF764ba2),
+  ];
+  static const List<Color> promoGradientPink = [
+    Color(0xFFf093fb),
+    Color(0xFFf5576c),
+  ];
+  static const List<Color> promoGradientGreen = [
+    Color(0xFF11998e),
+    Color(0xFF38ef7d),
+  ];
+  static const List<Color> promoGradientBlue = [
+    Color(0xFF4facfe),
+    Color(0xFF00f2fe),
+  ];
+  static const List<Color> promoGradientOrange = [
+    Color(0xFFfc4a1a),
+    Color(0xFFf7b733),
+  ];
+
+  // ==========================================================================
+  // WALLET BANIÈRE SOMBRE
+  // ==========================================================================
+
+  static const Color walletBannerDark = Color(0xFF1A1A2E);
+  static const Color walletBannerDarker = Color(0xFF16213E);
+
+  // ==========================================================================
+  // COULEURS MODE SOMBRE
+  // ==========================================================================
+
   /// Fond principal dark
   static const Color darkBackground = Color(0xFF0F172A);
   static const Color darkSurface = Color(0xFF1E293B);
   static const Color darkSurfaceVariant = Color(0xFF334155);
-  
+
   /// Texte dark
   static const Color darkTextPrimary = Color(0xFFF8FAFC);
   static const Color darkTextSecondary = Color(0xFF94A3B8);
   static const Color darkTextTertiary = Color(0xFF64748B);
-  
+
   /// Bordures dark
   static const Color darkBorder = Color(0xFF334155);
   static const Color darkBorderLight = Color(0xFF475569);
-  
+
   /// Statuts dark (légèrement plus lumineux)
   static const Color darkSuccess = Color(0xFF34D399);
   static const Color darkWarning = Color(0xFFFBBF24);

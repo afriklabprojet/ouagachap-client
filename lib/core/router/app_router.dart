@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../di/injection.dart';
+import '../services/secure_token_service.dart';
+import '../widgets/main_shell.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
@@ -18,13 +20,17 @@ import '../../features/profile/presentation/pages/edit_profile_page.dart';
 import '../../features/support/presentation/pages/support_page.dart';
 import '../../features/notification/presentation/pages/notifications_page.dart';
 import '../../features/wallet/presentation/pages/recharge_page.dart';
+import '../../features/wallet/presentation/pages/wallet_home_page.dart';
 import '../../features/wallet/presentation/pages/jeko_recharge_page.dart';
 import '../../features/wallet/presentation/pages/jeko_transaction_history_page.dart';
 import '../../features/promo/presentation/pages/promotions_page.dart';
 import '../../features/incoming/presentation/pages/incoming_orders_page.dart';
 import '../../features/address/presentation/pages/addresses_page.dart';
+import '../../features/settings/presentation/pages/accessibility_settings_page.dart';
 import '../../features/tracking/presentation/bloc/live_tracking_bloc.dart';
 import '../../features/tracking/presentation/pages/live_tracking_page.dart';
+import '../../features/order/presentation/pages/order_chat_page.dart';
+import '../../features/order/presentation/bloc/order_chat_bloc.dart';
 
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -33,22 +39,34 @@ class AppRouter {
     navigatorKey: _rootNavigatorKey,
     initialLocation: Routes.splash,
     debugLogDiagnostics: true,
+    redirect: (context, state) {
+      final location = state.matchedLocation;
+      // Routes publiques accessibles sans authentification
+      const publicRoutes = [
+        Routes.splash,
+        Routes.onboarding,
+        Routes.login,
+        Routes.register,
+        Routes.otpVerification,
+      ];
+      final isPublic = publicRoutes.contains(location);
+      final hasToken = getIt<SecureTokenService>().token != null;
+
+      if (!hasToken && !isPublic) return Routes.login;
+      return null;
+    },
     routes: [
-      // Splash
+      // ── Routes hors shell (auth, splash, onboarding) ──────────────
       GoRoute(
         path: Routes.splash,
         name: Routes.splash,
         builder: (context, state) => const SplashPage(),
       ),
-      
-      // Onboarding
       GoRoute(
         path: Routes.onboarding,
         name: Routes.onboarding,
         builder: (context, state) => const OnboardingPage(),
       ),
-      
-      // Auth routes
       GoRoute(
         path: Routes.login,
         name: Routes.login,
@@ -67,60 +85,133 @@ class AppRouter {
           return OtpVerificationPage(
             phoneNumber: extra?['phoneNumber'] ?? '',
             isLogin: extra?['isLogin'] ?? false,
+            confirmationMessage: extra?['confirmationMessage'] as String?,
           );
         },
       ),
-      
-      // Main app routes
-      GoRoute(
-        path: Routes.home,
-        name: Routes.home,
-        builder: (context, state) => const HomePage(),
-        routes: [
-          // Create Order
-          GoRoute(
-            path: 'create-order',
-            name: Routes.createOrder,
-            builder: (context, state) => const CreateOrderPage(),
+
+      // ── Shell route avec BottomNavigationBar ──────────────────────
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return MainShell(navigationShell: navigationShell);
+        },
+        branches: [
+          // ─ Onglet 0 : Accueil ─────────────────────────────────────
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.home,
+                name: Routes.home,
+                builder: (context, state) => const HomePage(),
+                routes: [
+                  GoRoute(
+                    path: 'create-order',
+                    name: Routes.createOrder,
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) => const CreateOrderPage(),
+                  ),
+                  GoRoute(
+                    path: 'promotions',
+                    name: Routes.promotions,
+                    builder: (context, state) => const PromotionsPage(),
+                  ),
+                ],
+              ),
+            ],
           ),
-          // Recharge
-          GoRoute(
-            path: 'recharge',
-            name: Routes.recharge,
-            builder: (context, state) => const RechargePage(),
+
+          // ─ Onglet 1 : Commandes ───────────────────────────────────
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.ordersHistory,
+                name: Routes.ordersHistory,
+                builder: (context, state) => const OrdersHistoryPage(),
+              ),
+            ],
           ),
-          // JEKO Recharge (Mobile Money)
-          GoRoute(
-            path: 'jeko-recharge',
-            name: Routes.jekoRecharge,
-            builder: (context, state) => const JekoRechargePage(),
+
+          // ─ Onglet 2 : Wallet ──────────────────────────────────────
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.wallet,
+                name: Routes.wallet,
+                builder: (context, state) => const WalletHomePage(),
+                routes: [
+                  GoRoute(
+                    path: Routes.walletRecharge,
+                    name: Routes.walletRecharge,
+                    builder: (context, state) => const RechargePage(),
+                  ),
+                  GoRoute(
+                    path: 'jeko-recharge',
+                    name: Routes.jekoRecharge,
+                    builder: (context, state) => const JekoRechargePage(),
+                  ),
+                  GoRoute(
+                    path: 'jeko-history',
+                    name: Routes.jekoHistory,
+                    builder: (context, state) =>
+                        const JekoTransactionHistoryPage(),
+                  ),
+                ],
+              ),
+            ],
           ),
-          // JEKO Transaction History
-          GoRoute(
-            path: 'jeko-history',
-            name: Routes.jekoHistory,
-            builder: (context, state) => const JekoTransactionHistoryPage(),
-          ),
-          // Promotions
-          GoRoute(
-            path: 'promotions',
-            name: Routes.promotions,
-            builder: (context, state) => const PromotionsPage(),
+
+          // ─ Onglet 3 : Profil ──────────────────────────────────────
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.profile,
+                name: Routes.profile,
+                builder: (context, state) => const ProfilePage(),
+                routes: [
+                  GoRoute(
+                    path: 'edit',
+                    name: Routes.editProfile,
+                    builder: (context, state) => const EditProfilePage(),
+                  ),
+                  GoRoute(
+                    path: 'notifications',
+                    name: Routes.notifications,
+                    builder: (context, state) => const NotificationsPage(),
+                  ),
+                  GoRoute(
+                    path: 'support',
+                    name: Routes.support,
+                    builder: (context, state) => const SupportPage(),
+                  ),
+                  GoRoute(
+                    path: 'addresses',
+                    name: Routes.addresses,
+                    builder: (context, state) => const AddressesPage(),
+                  ),
+                  GoRoute(
+                    path: 'accessibility',
+                    name: Routes.accessibility,
+                    builder: (context, state) =>
+                        const AccessibilitySettingsPage(),
+                  ),
+                ],
+              ),
+            ],
           ),
         ],
       ),
-      
-      // Orders
-      GoRoute(
-        path: Routes.ordersHistory,
-        name: Routes.ordersHistory,
-        builder: (context, state) => const OrdersHistoryPage(),
-      ),
+
+      // ── Routes plein écran (sans bottom bar) ──────────────────────
       GoRoute(
         path: '${Routes.orderDetails}/:orderId',
         name: Routes.orderDetails,
         builder: (context, state) {
-          final orderId = state.pathParameters['orderId']!;
+          final orderId = state.pathParameters['orderId'];
+          if (orderId == null || orderId.isEmpty) {
+            return const Scaffold(
+              body: Center(child: Text('Commande introuvable')),
+            );
+          }
           return OrderDetailsPage(orderId: orderId);
         },
       ),
@@ -128,18 +219,25 @@ class AppRouter {
         path: '${Routes.orderTracking}/:orderId',
         name: Routes.orderTracking,
         builder: (context, state) {
-          final orderId = state.pathParameters['orderId']!;
-          return OrderTrackingPage(orderId: orderId);
+          final orderId = state.pathParameters['orderId'];
+          if (orderId == null || orderId.isEmpty) {
+            return const Scaffold(
+              body: Center(child: Text('Commande introuvable')),
+            );
+          }
+          return BlocProvider(
+            create: (_) => getIt<LiveTrackingBloc>(),
+            child: OrderTrackingPage(orderId: orderId),
+          );
         },
       ),
-      // Suivi en temps réel
       GoRoute(
         path: '${Routes.liveTracking}/:orderId',
         name: Routes.liveTracking,
         builder: (context, state) {
-          final orderId = int.tryParse(state.pathParameters['orderId'] ?? '') ?? 0;
+          final orderId =
+              int.tryParse(state.pathParameters['orderId'] ?? '') ?? 0;
           if (orderId == 0) {
-            // ID invalide — rediriger vers l'accueil
             return const Scaffold(
               body: Center(child: Text('Commande introuvable')),
             );
@@ -147,11 +245,19 @@ class AppRouter {
           final trackingCode = state.uri.queryParameters['tracking'] ?? '';
           final courierName = state.uri.queryParameters['courierName'];
           final courierPhone = state.uri.queryParameters['courierPhone'];
-          final pickupLat = double.tryParse(state.uri.queryParameters['pickupLat'] ?? '');
-          final pickupLng = double.tryParse(state.uri.queryParameters['pickupLng'] ?? '');
-          final deliveryLat = double.tryParse(state.uri.queryParameters['deliveryLat'] ?? '');
-          final deliveryLng = double.tryParse(state.uri.queryParameters['deliveryLng'] ?? '');
-          
+          final pickupLat = double.tryParse(
+            state.uri.queryParameters['pickupLat'] ?? '',
+          );
+          final pickupLng = double.tryParse(
+            state.uri.queryParameters['pickupLng'] ?? '',
+          );
+          final deliveryLat = double.tryParse(
+            state.uri.queryParameters['deliveryLat'] ?? '',
+          );
+          final deliveryLng = double.tryParse(
+            state.uri.queryParameters['deliveryLng'] ?? '',
+          );
+
           return BlocProvider(
             create: (_) => getIt<LiveTrackingBloc>(),
             child: LiveTrackingPage(
@@ -167,43 +273,26 @@ class AppRouter {
           );
         },
       ),
-      
-      // Profile
-      GoRoute(
-        path: Routes.profile,
-        name: Routes.profile,
-        builder: (context, state) => const ProfilePage(),
-        routes: [
-          GoRoute(
-            path: 'edit',
-            name: Routes.editProfile,
-            builder: (context, state) => const EditProfilePage(),
-          ),
-          GoRoute(
-            path: 'notifications',
-            name: Routes.notifications,
-            builder: (context, state) => const NotificationsPage(),
-          ),
-          // Support route
-          GoRoute(
-            path: 'support',
-            name: Routes.support,
-            builder: (context, state) => const SupportPage(),
-          ),
-          // Adresses sauvegardées
-          GoRoute(
-            path: 'addresses',
-            name: Routes.addresses,
-            builder: (context, state) => const AddressesPage(),
-          ),
-        ],
-      ),
-      
-      // Incoming orders (colis entrants)
       GoRoute(
         path: Routes.incomingOrders,
         name: Routes.incomingOrders,
         builder: (context, state) => const IncomingOrdersPage(),
+      ),
+      GoRoute(
+        path: '${Routes.orderChat}/:orderUuid',
+        name: Routes.orderChat,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final orderUuid = state.pathParameters['orderUuid'] ?? '';
+          final courierName = state.uri.queryParameters['courierName'];
+          return BlocProvider(
+            create: (_) => getIt<OrderChatBloc>(),
+            child: OrderChatPage(
+              orderUuid: orderUuid,
+              courierName: courierName,
+            ),
+          );
+        },
       ),
     ],
     errorBuilder: (context, state) => Scaffold(
@@ -239,7 +328,7 @@ abstract class Routes {
   static const String otpVerification = '/otp-verification';
   static const String home = '/home';
   static const String createOrder = 'create-order';
-  static const String recharge = 'recharge';
+  static const String wallet = '/wallet';
   static const String promotions = 'promotions';
   static const String ordersHistory = '/orders';
   static const String orderDetails = '/order';
@@ -250,7 +339,10 @@ abstract class Routes {
   static const String notifications = 'notifications';
   static const String support = 'support';
   static const String addresses = 'addresses';
+  static const String accessibility = 'accessibility';
   static const String incomingOrders = '/incoming-orders';
+  static const String walletRecharge = 'recharge';
   static const String jekoRecharge = 'jeko-recharge';
   static const String jekoHistory = 'jeko-history';
+  static const String orderChat = '/order-chat';
 }

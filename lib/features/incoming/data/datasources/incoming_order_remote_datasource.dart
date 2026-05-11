@@ -10,38 +10,34 @@ class IncomingOrderRemoteDataSource {
   Future<Map<String, dynamic>> getIncomingOrders({String? status}) async {
     final queryParams = <String, dynamic>{};
     if (status != null) queryParams['status'] = status;
-    
+
     final response = await _apiClient.get(
       '/incoming-orders',
       queryParameters: queryParams,
     );
-    
+
     final data = response.data['data'] as Map<String, dynamic>;
     final orders = (data['orders'] as List)
         .map((json) => IncomingOrder.fromJson(json as Map<String, dynamic>))
         .toList();
-    
+
     final stats = IncomingOrderStats.fromJson(
       data['stats'] as Map<String, dynamic>? ?? {},
     );
-    
-    return {
-      'orders': orders,
-      'stats': stats,
-      'pagination': data['pagination'],
-    };
+
+    return {'orders': orders, 'stats': stats, 'pagination': data['pagination']};
   }
 
   /// Récupérer les détails d'un colis entrant
   Future<IncomingOrder> getIncomingOrderDetails(String orderId) async {
-    final response = await _apiClient.get('/incoming-orders/$orderId');
+    final response = await _apiClient.get('incoming-orders/$orderId');
     final data = response.data['data'] as Map<String, dynamic>;
     return IncomingOrder.fromJson(data['order'] as Map<String, dynamic>);
   }
 
   /// Suivre un colis en temps réel (position du coursier)
   Future<Map<String, dynamic>> trackOrder(String orderId) async {
-    final response = await _apiClient.get('/incoming-orders/$orderId/track');
+    final response = await _apiClient.get('incoming-orders/$orderId/track');
     return response.data['data'] as Map<String, dynamic>;
   }
 
@@ -60,10 +56,7 @@ class IncomingOrderRemoteDataSource {
   }) async {
     final response = await _apiClient.post(
       '/track-order',
-      data: {
-        'order_number': orderNumber,
-        'phone': phone,
-      },
+      data: {'order_number': orderNumber, 'phone': phone},
     );
     return response.data['data'] as Map<String, dynamic>;
   }

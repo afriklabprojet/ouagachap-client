@@ -1,94 +1,149 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/animations.dart';
+import '../../../../core/widgets/lottie_animations.dart';
+import '../../domain/entities/promo_code.dart';
+import '../bloc/promo_bloc.dart';
+import '../bloc/promo_event.dart';
+import '../bloc/promo_state.dart';
 
 class PromotionsPage extends StatelessWidget {
   const PromotionsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final promotions = [
-      _Promotion(
-        title: '-20% sur votre première commande',
-        description: 'Bénéficiez de 20% de réduction sur votre première livraison avec OUAGA CHAP',
-        code: 'BIENVENUE20',
-        discount: '20%',
-        minAmount: 500,
-        expiresAt: '28 Février 2026',
-        gradient: const [Color(0xFF667eea), Color(0xFF764ba2)],
-        icon: Icons.card_giftcard,
-      ),
-      _Promotion(
-        title: 'Livraison gratuite le weekend',
-        description: 'Les samedis et dimanches, profitez de la livraison offerte pour toute commande',
-        code: 'WEEKEND',
-        discount: '100%',
-        minAmount: 1000,
-        expiresAt: '31 Mars 2026',
-        gradient: const [Color(0xFFf093fb), Color(0xFFf5576c)],
-        icon: Icons.celebration,
-      ),
-      _Promotion(
-        title: 'Parrainage - 500 FCFA offerts',
-        description: 'Invitez un ami et recevez chacun 500 FCFA de crédit sur votre wallet',
-        code: 'PARRAIN500',
-        discount: '500 FCFA',
-        minAmount: 0,
-        expiresAt: 'Sans limite',
-        gradient: const [Color(0xFF11998e), Color(0xFF38ef7d)],
-        icon: Icons.people,
-      ),
-      _Promotion(
-        title: 'Happy Hour - 15% off',
-        description: 'De 14h à 16h, profitez de 15% de réduction sur toutes vos livraisons',
-        code: 'HAPPYHOUR',
-        discount: '15%',
-        minAmount: 300,
-        expiresAt: '30 Juin 2026',
-        gradient: const [Color(0xFFfc4a1a), Color(0xFFf7b733)],
-        icon: Icons.access_time,
-      ),
-    ];
-
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(
+            Icons.arrow_back,
+            color: Theme.of(context).iconTheme.color,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Promotions',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(20),
-        itemCount: promotions.length,
-        itemBuilder: (context, index) {
-          final promo = promotions[index];
-          return _buildPromoCard(context, promo);
+      body: BlocBuilder<PromoBloc, PromoState>(
+        builder: (context, state) {
+          if (state.status == PromoStatus.loading) {
+            return const AnimatedLoadingWidget(
+              message: 'Chargement des promotions...',
+            );
+          }
+
+          if (state.status == PromoStatus.error) {
+            return _buildErrorState(context, state.errorMessage);
+          }
+
+          if (state.promoCodes.isEmpty) {
+            return _buildEmptyState(context);
+          }
+
+          return RefreshIndicator(
+            onRefresh: () async {
+              context.read<PromoBloc>().add(const LoadPromoCodes());
+            },
+            child: ListView.builder(
+              padding: const EdgeInsets.all(20),
+              itemCount: state.promoCodes.length,
+              itemBuilder: (context, index) {
+                final promo = state.promoCodes[index];
+                return FadeInWidget(
+                  delay: Duration(milliseconds: index < 10 ? index * 80 : 0),
+                  child: _buildPromoCard(context, promo),
+                );
+              },
+            ),
+          );
         },
       ),
     );
   }
 
-  Widget _buildPromoCard(BuildContext context, _Promotion promo) {
+  Widget _buildErrorState(BuildContext context, String? message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            LottieAnimation.error(size: 120),
+            const SizedBox(height: 16),
+            Text(
+              message ?? 'Impossible de charger les promotions',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                context.read<PromoBloc>().add(const LoadPromoCodes());
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('Réessayer'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            LottieAnimation.empty(size: 120),
+            const SizedBox(height: 16),
+            Text(
+              'Aucune promotion disponible',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Revenez bientôt pour découvrir nos offres !',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPromoCard(BuildContext context, PromoCode promo) {
+    final gradient = _getGradientForType(promo.type);
+    final icon = _getIconForType(promo.type);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -96,12 +151,11 @@ class PromotionsPage extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Header avec gradient
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: promo.gradient,
+                colors: gradient,
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -115,10 +169,10 @@ class PromotionsPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(promo.icon, color: Colors.white, size: 28),
+                  child: Icon(icon, color: Colors.white, size: 28),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -126,7 +180,7 @@ class PromotionsPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        promo.title,
+                        promo.name.isNotEmpty ? promo.name : promo.code,
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -135,13 +189,16 @@ class PromotionsPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.25),
+                          color: Colors.white.withValues(alpha: 0.25),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          promo.discount,
+                          promo.discountLabel,
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -155,30 +212,40 @@ class PromotionsPage extends StatelessWidget {
               ],
             ),
           ),
-          // Body
           Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  promo.description,
-                  style: TextStyle(
-                    color: Colors.grey[700],
-                    fontSize: 14,
-                    height: 1.4,
+                if (promo.description.isNotEmpty)
+                  Text(
+                    promo.description,
+                    style: TextStyle(
+                      color: Colors.grey[700],
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Row(
+                if (promo.description.isNotEmpty) const SizedBox(height: 16),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
                   children: [
-                    _buildInfoChip(Icons.shopping_bag_outlined, 'Min: ${promo.minAmount} FCFA'),
-                    const SizedBox(width: 12),
-                    _buildInfoChip(Icons.calendar_today_outlined, promo.expiresAt),
+                    if (promo.minOrderAmount > 0)
+                      _buildInfoChip(
+                        Icons.shopping_bag_outlined,
+                        'Min: ${promo.minOrderAmount.toInt()} FCFA',
+                      ),
+                    if (promo.expiresAt != null)
+                      _buildInfoChip(
+                        Icons.calendar_today_outlined,
+                        _formatExpiry(promo.expiresAt!),
+                      ),
+                    if (promo.firstOrderOnly)
+                      _buildInfoChip(Icons.star_outline, '1ère commande'),
                   ],
                 ),
                 const SizedBox(height: 16),
-                // Code promo
                 GestureDetector(
                   onTap: () {
                     Clipboard.setData(ClipboardData(text: promo.code));
@@ -186,34 +253,50 @@ class PromotionsPage extends StatelessWidget {
                       SnackBar(
                         content: Row(
                           children: [
-                            const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                            const Icon(
+                              Icons.check_circle,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                             const SizedBox(width: 10),
                             Text('Code ${promo.code} copié !'),
                           ],
                         ),
-                        backgroundColor: Colors.green,
+                        backgroundColor: AppColors.success,
                         behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     );
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.grey[100],
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[300]!, style: BorderStyle.solid),
+                      border: Border.all(
+                        color: Colors.grey[300]!,
+                        style: BorderStyle.solid,
+                      ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.confirmation_number_outlined, color: AppColors.primary, size: 20),
+                            const Icon(
+                              Icons.confirmation_number_outlined,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
                             const SizedBox(width: 10),
                             Text(
                               promo.code,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                                 color: AppColors.primary,
@@ -223,7 +306,10 @@ class PromotionsPage extends StatelessWidget {
                           ],
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.primary,
                             borderRadius: BorderRadius.circular(8),
@@ -267,37 +353,44 @@ class PromotionsPage extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: Colors.grey[600]),
           const SizedBox(width: 6),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-          ),
+          Text(text, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
         ],
       ),
     );
   }
-}
 
-class _Promotion {
-  final String title;
-  final String description;
-  final String code;
-  final String discount;
-  final int minAmount;
-  final String expiresAt;
-  final List<Color> gradient;
-  final IconData icon;
+  List<Color> _getGradientForType(String type) {
+    switch (type) {
+      case 'percentage':
+        return AppColors.promoGradientPurple;
+      case 'fixed':
+        return AppColors.promoGradientGreen;
+      case 'free_delivery':
+        return AppColors.promoGradientPink;
+      default:
+        return AppColors.promoGradientOrange;
+    }
+  }
 
-  const _Promotion({
-    required this.title,
-    required this.description,
-    required this.code,
-    required this.discount,
-    required this.minAmount,
-    required this.expiresAt,
-    required this.gradient,
-    required this.icon,
-  });
+  IconData _getIconForType(String type) {
+    switch (type) {
+      case 'percentage':
+        return Icons.percent;
+      case 'fixed':
+        return Icons.card_giftcard;
+      case 'free_delivery':
+        return Icons.local_shipping;
+      default:
+        return Icons.celebration;
+    }
+  }
+
+  String _formatExpiry(String expiresAt) {
+    try {
+      final date = DateTime.parse(expiresAt);
+      return 'Expire le ${DateFormat('d MMM yyyy', 'fr_FR').format(date)}';
+    } catch (_) {
+      return expiresAt;
+    }
+  }
 }

@@ -29,7 +29,7 @@ abstract class OrderRemoteDataSource {
 
   Future<void> cancelOrder(String orderId, {String? reason});
 
-  Future<Map<String, double>> calculatePrice({
+  Future<Map<String, dynamic>> calculatePrice({
     required double pickupLatitude,
     required double pickupLongitude,
     required double deliveryLatitude,
@@ -42,6 +42,9 @@ abstract class OrderRemoteDataSource {
     String? review,
     List<String>? tags,
   });
+
+  /// Récupérer le profil public d'un coursier
+  Future<Map<String, dynamic>> getCourierProfile(int courierId);
 }
 
 class OrderRemoteDataSourceImpl implements OrderRemoteDataSource {
@@ -78,7 +81,8 @@ class OrderRemoteDataSourceImpl implements OrderRemoteDataSource {
         'dropoff_longitude': deliveryLongitude,
         'dropoff_contact_name': recipientName,
         'dropoff_contact_phone': recipientPhone,
-        if (packageDescription != null) 'package_description': packageDescription,
+        if (packageDescription != null)
+          'package_description': packageDescription,
         if (packageSize != null) 'package_size': packageSize,
         'payment_method': paymentMethod,
       },
@@ -105,7 +109,7 @@ class OrderRemoteDataSourceImpl implements OrderRemoteDataSource {
 
     final data = response.data['data'] as List<dynamic>?;
     if (data == null) return [];
-    
+
     return data
         .map((json) => OrderModel.fromJson(json as Map<String, dynamic>))
         .toList();
@@ -113,7 +117,7 @@ class OrderRemoteDataSourceImpl implements OrderRemoteDataSource {
 
   @override
   Future<OrderModel> getOrderDetails(String orderId) async {
-    final response = await _apiClient.get('/orders/$orderId');
+    final response = await _apiClient.get('orders/$orderId');
     final data = response.data['data'] ?? response.data;
     return OrderModel.fromJson(data as Map<String, dynamic>);
   }
@@ -121,22 +125,20 @@ class OrderRemoteDataSourceImpl implements OrderRemoteDataSource {
   @override
   Future<void> cancelOrder(String orderId, {String? reason}) async {
     await _apiClient.post(
-      '/orders/$orderId/cancel',
-      data: {
-        if (reason != null) 'reason': reason,
-      },
+      'orders/$orderId/cancel',
+      data: {if (reason != null) 'reason': reason},
     );
   }
 
   @override
-  Future<Map<String, double>> calculatePrice({
+  Future<Map<String, dynamic>> calculatePrice({
     required double pickupLatitude,
     required double pickupLongitude,
     required double deliveryLatitude,
     required double deliveryLongitude,
   }) async {
     final response = await _apiClient.post(
-      '/orders/estimate',
+      'orders/estimate',
       data: {
         'pickup_latitude': pickupLatitude,
         'pickup_longitude': pickupLongitude,
@@ -146,13 +148,15 @@ class OrderRemoteDataSourceImpl implements OrderRemoteDataSource {
     );
 
     final data = response.data['data'] ?? response.data;
-    return {
+    return <String, dynamic>{
       'total_price': ((data['total_price'] ?? 0) as num).toDouble(),
       'distance_km': ((data['distance_km'] ?? 0) as num).toDouble(),
       'base_price': ((data['base_price'] ?? 0) as num).toDouble(),
       'distance_price': ((data['distance_price'] ?? 0) as num).toDouble(),
       'commission_amount': ((data['commission_amount'] ?? 0) as num).toDouble(),
       'courier_earnings': ((data['courier_earnings'] ?? 0) as num).toDouble(),
+      'is_surge': data['is_surge'] == true,
+      'surge_multiplier': ((data['surge_multiplier'] ?? 1.0) as num).toDouble(),
     };
   }
 
@@ -174,5 +178,15 @@ class OrderRemoteDataSourceImpl implements OrderRemoteDataSource {
 
     final data = response.data['data'] ?? response.data;
     return OrderModel.fromJson(data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<Map<String, dynamic>> getCourierProfile(int courierId) async {
+    final response = await _apiClient.get('couriers/$courierId/profile');
+    final data = response.data;
+    if (data['success'] == true) {
+      return data['data'] as Map<String, dynamic>;
+    }
+    throw Exception(data['message'] ?? 'Erreur lors du chargement du profil');
   }
 }

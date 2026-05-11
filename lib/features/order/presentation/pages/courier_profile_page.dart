@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/network/api_client.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../domain/repositories/order_repository.dart';
 
 /// Page de profil public du coursier
 class CourierProfilePage extends StatefulWidget {
@@ -34,20 +34,13 @@ class _CourierProfilePageState extends State<CourierProfilePage> {
 
   Future<void> _loadProfile() async {
     try {
-      final response =
-          await getIt<ApiClient>().get('couriers/${widget.courierId}/profile');
-      final data = response.data;
-      if (data['success'] == true) {
-        setState(() {
-          _profile = data['data'] as Map<String, dynamic>;
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _error = data['message'] ?? 'Erreur';
-          _isLoading = false;
-        });
-      }
+      final profile = await getIt<OrderRepository>().getCourierProfile(
+        widget.courierId,
+      );
+      setState(() {
+        _profile = profile;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _error = 'Impossible de charger le profil';
@@ -71,35 +64,38 @@ class _CourierProfilePageState extends State<CourierProfilePage> {
         ),
         title: Text(
           widget.courierName ?? 'Profil coursier',
-          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
-                      const SizedBox(height: 16),
-                      Text(_error!, style: TextStyle(color: Colors.grey[600])),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            _isLoading = true;
-                            _error = null;
-                          });
-                          _loadProfile();
-                        },
-                        child: const Text('Réessayer'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  Text(_error!, style: TextStyle(color: Colors.grey[600])),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _isLoading = true;
+                        _error = null;
+                      });
+                      _loadProfile();
+                    },
+                    child: const Text('Réessayer'),
                   ),
-                )
-              : _buildProfile(),
+                ],
+              ),
+            )
+          : _buildProfile(),
     );
   }
 
@@ -127,7 +123,11 @@ class _CourierProfilePageState extends State<CourierProfilePage> {
             backgroundColor: AppColors.primary.withValues(alpha: 0.1),
             backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
             child: avatarUrl == null
-                ? Icon(Icons.person, size: 60, color: AppColors.primary.withValues(alpha: 0.5))
+                ? Icon(
+                    Icons.person,
+                    size: 60,
+                    color: AppColors.primary.withValues(alpha: 0.5),
+                  )
                 : null,
           ),
           const SizedBox(height: 16),
@@ -148,9 +148,17 @@ class _CourierProfilePageState extends State<CourierProfilePage> {
                 if (rating >= starValue) {
                   return const Icon(Icons.star, color: Colors.amber, size: 24);
                 } else if (rating >= starValue - 0.5) {
-                  return const Icon(Icons.star_half, color: Colors.amber, size: 24);
+                  return const Icon(
+                    Icons.star_half,
+                    color: Colors.amber,
+                    size: 24,
+                  );
                 } else {
-                  return Icon(Icons.star_border, color: Colors.grey[300], size: 24);
+                  return Icon(
+                    Icons.star_border,
+                    color: Colors.grey[300],
+                    size: 24,
+                  );
                 }
               }),
               const SizedBox(width: 8),
@@ -198,7 +206,9 @@ class _CourierProfilePageState extends State<CourierProfilePage> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: isDark ? Colors.black.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.05),
+                  color: isDark
+                      ? Colors.black.withValues(alpha: 0.3)
+                      : Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -215,22 +225,25 @@ class _CourierProfilePageState extends State<CourierProfilePage> {
                         color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.two_wheeler, color: AppColors.primary),
+                      child: const Icon(
+                        Icons.two_wheeler,
+                        color: AppColors.primary,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     const Text(
                       'Véhicule',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                if (vehicleType != null)
-                  _buildInfoRow('Type', vehicleType),
-                if (vehicleModel != null)
-                  _buildInfoRow('Modèle', vehicleModel),
-                if (vehiclePlate != null)
-                  _buildInfoRow('Plaque', vehiclePlate),
+                if (vehicleType != null) _buildInfoRow('Type', vehicleType),
+                if (vehicleModel != null) _buildInfoRow('Modèle', vehicleModel),
+                if (vehiclePlate != null) _buildInfoRow('Plaque', vehiclePlate),
               ],
             ),
           ),
@@ -239,7 +252,12 @@ class _CourierProfilePageState extends State<CourierProfilePage> {
     );
   }
 
-  Widget _buildStatCard(IconData icon, String value, String label, Color color) {
+  Widget _buildStatCard(
+    IconData icon,
+    String value,
+    String label,
+    Color color,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
@@ -250,7 +268,9 @@ class _CourierProfilePageState extends State<CourierProfilePage> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: isDark ? Colors.black.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.05),
+              color: isDark
+                  ? Colors.black.withValues(alpha: 0.3)
+                  : Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),

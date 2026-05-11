@@ -13,10 +13,7 @@ class StartTracking extends LiveTrackingEvent {
   final int orderId;
   final String trackingCode;
 
-  const StartTracking({
-    required this.orderId,
-    required this.trackingCode,
-  });
+  const StartTracking({required this.orderId, required this.trackingCode});
 
   @override
   List<Object?> get props => [orderId, trackingCode];
@@ -68,10 +65,7 @@ class ETAUpdated extends LiveTrackingEvent {
   final int estimatedMinutes;
   final double distanceKm;
 
-  const ETAUpdated({
-    required this.estimatedMinutes,
-    required this.distanceKm,
-  });
+  const ETAUpdated({required this.estimatedMinutes, required this.distanceKm});
 
   @override
   List<Object?> get props => [estimatedMinutes, distanceKm];
@@ -95,4 +89,9 @@ class TrackingReconnecting extends LiveTrackingEvent {
 /// Connexion établie
 class TrackingConnected extends LiveTrackingEvent {
   const TrackingConnected();
+}
+
+/// Forcer une reconnexion (retour au premier plan)
+class ReconnectTracking extends LiveTrackingEvent {
+  const ReconnectTracking();
 }

@@ -7,7 +7,7 @@ import 'package:web_socket_channel/status.dart' as status;
 
 /// Service de connexion WebSocket pour le suivi en temps réel.
 /// Compatible avec Laravel Reverb/Pusher.
-/// 
+///
 /// **Stratégie de reconnexion** : Exponential backoff avec jitter aléatoire.
 /// Pas de limite sur le nombre de tentatives — sur 3G instable,
 /// couper après 5 essais (45s) perd le suivi en temps réel définitivement.
@@ -17,17 +17,17 @@ class WebSocketService {
   StreamController<Map<String, dynamic>>? _messageController;
   Timer? _pingTimer;
   Timer? _reconnectTimer;
-  
+
   bool _isConnected = false;
   bool _shouldReconnect = true;
   int _reconnectAttempts = 0;
-  
+
   /// Délai initial de reconnexion
   static const Duration _baseReconnectDelay = Duration(seconds: 2);
-  
+
   /// Délai maximum de reconnexion (plafonné)
   static const Duration _maxReconnectDelay = Duration(seconds: 60);
-  
+
   /// Intervalle de ping pour maintenir la connexion alive
   static const Duration _pingInterval = Duration(seconds: 30);
 
@@ -36,11 +36,9 @@ class WebSocketService {
   String? _socketId;
   final Set<String> _subscribedChannels = {};
 
-  WebSocketService({
-    required String baseUrl,
-    required String appKey,
-  })  : _baseUrl = baseUrl,
-        _appKey = appKey;
+  WebSocketService({required String baseUrl, required String appKey})
+    : _baseUrl = baseUrl,
+      _appKey = appKey;
 
   /// Stream des messages reçus
   Stream<Map<String, dynamic>> get messages {
@@ -60,7 +58,7 @@ class WebSocketService {
       debugPrint('WebSocket: Connecting to $wsUrl');
 
       _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
-      
+
       _channel!.stream.listen(
         _handleMessage,
         onError: _handleError,
@@ -70,7 +68,6 @@ class WebSocketService {
 
       _startPingTimer();
       _reconnectAttempts = 0;
-      
     } catch (e) {
       debugPrint('WebSocket: Connection error: $e');
       _scheduleReconnect();
@@ -88,7 +85,7 @@ class WebSocketService {
     try {
       final message = json.decode(data as String) as Map<String, dynamic>;
       final event = message['event'] as String?;
-      
+
       debugPrint('WebSocket: Received event: $event');
 
       switch (event) {
@@ -123,7 +120,7 @@ class WebSocketService {
       _isConnected = true;
       _reconnectAttempts = 0; // Reset après connexion réussie
       debugPrint('WebSocket: Connected with socket_id: $_socketId');
-      
+
       // Ré-abonner aux channels précédents
       for (final channel in _subscribedChannels) {
         _sendSubscribe(channel);
@@ -144,14 +141,17 @@ class WebSocketService {
     _isConnected = false;
     _socketId = null;
     _pingTimer?.cancel();
-    
+
     if (_shouldReconnect) {
       _scheduleReconnect();
     }
   }
 
+  /// Nombre maximum de tentatives de reconnexion avant abandon.
+  static const int _maxReconnectAttempts = 15;
+
   /// Planifie une reconnexion avec exponential backoff + jitter.
-  /// 
+  ///
   /// Formule : min(baseDelay * 2^attempts, maxDelay) + jitter aléatoire
   /// Le jitter évite que tous les clients se reconnectent en même temps
   /// après une panne serveur (thundering herd problem).
@@ -160,22 +160,36 @@ class WebSocketService {
 
     _reconnectTimer?.cancel();
     _reconnectAttempts++;
-    
+
+    // Circuit breaker : abandon après trop de tentatives
+    if (_reconnectAttempts > _maxReconnectAttempts) {
+      debugPrint(
+        'WebSocket: Max reconnect attempts reached ($_maxReconnectAttempts). Giving up.',
+      );
+      _shouldReconnect = false;
+      _messageController?.add({'event': 'connection_failed', 'data': {}});
+      return;
+    }
+
     // Exponential backoff : 2s, 4s, 8s, 16s, 32s, 60s, 60s, 60s...
-    final exponentialDelay = _baseReconnectDelay * pow(2, _reconnectAttempts - 1);
-    final cappedDelay = exponentialDelay > _maxReconnectDelay 
-        ? _maxReconnectDelay 
+    final exponentialDelay =
+        _baseReconnectDelay * pow(2, _reconnectAttempts - 1);
+    final cappedDelay = exponentialDelay > _maxReconnectDelay
+        ? _maxReconnectDelay
         : exponentialDelay;
-    
+
     // Ajouter un jitter aléatoire de 0-30% pour éviter le thundering herd
     final jitter = Duration(
-      milliseconds: (cappedDelay.inMilliseconds * Random().nextDouble() * 0.3).round(),
+      milliseconds: (cappedDelay.inMilliseconds * Random().nextDouble() * 0.3)
+          .round(),
     );
     final totalDelay = cappedDelay + jitter;
-    
-    debugPrint('WebSocket: Reconnecting in ${totalDelay.inSeconds}s '
-        '(attempt #$_reconnectAttempts)');
-    
+
+    debugPrint(
+      'WebSocket: Reconnecting in ${totalDelay.inSeconds}s '
+      '(attempt #$_reconnectAttempts)',
+    );
+
     _reconnectTimer = Timer(totalDelay, () {
       connect();
     });
@@ -231,13 +245,10 @@ class WebSocketService {
   /// S'abonner à un canal privé (nécessite authentification)
   Future<void> subscribePrivate(String channel, String authToken) async {
     _subscribedChannels.add(channel);
-    
+
     _send({
       'event': 'pusher:subscribe',
-      'data': {
-        'channel': channel,
-        'auth': authToken,
-      },
+      'data': {'channel': channel, 'auth': authToken},
     });
     debugPrint('WebSocket: Subscribing to private channel $channel');
   }

@@ -1,9 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/lottie_animations.dart';
-import '../../../../core/widgets/animations.dart';
-import '../../../../core/widgets/form_fields.dart';
 import '../../domain/entities/faq.dart';
 import '../bloc/support_bloc.dart';
 import '../bloc/support_event.dart';
@@ -19,9 +18,11 @@ class FaqTab extends StatefulWidget {
 class _FaqTabState extends State<FaqTab> {
   final TextEditingController _searchController = TextEditingController();
   final Set<int> _expandedFaqs = {};
+  Timer? _searchDebounce;
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -54,10 +55,16 @@ class _FaqTabState extends State<FaqTab> {
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
             onChanged: (value) {
-              context.read<SupportBloc>().add(SearchFaqs(value));
+              _searchDebounce?.cancel();
+              _searchDebounce = Timer(const Duration(milliseconds: 400), () {
+                context.read<SupportBloc>().add(SearchFaqs(value));
+              });
               setState(() {});
             },
           ),
@@ -65,7 +72,8 @@ class _FaqTabState extends State<FaqTab> {
 
         // Category Chips
         BlocBuilder<SupportBloc, SupportState>(
-          buildWhen: (prev, curr) => prev.selectedFaqCategory != curr.selectedFaqCategory,
+          buildWhen: (prev, curr) =>
+              prev.selectedFaqCategory != curr.selectedFaqCategory,
           builder: (context, state) {
             return Container(
               height: 50,
@@ -81,18 +89,25 @@ class _FaqTabState extends State<FaqTab> {
                         entry.value,
                         style: TextStyle(
                           color: isSelected ? Colors.white : Colors.grey[700],
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
                           fontSize: 13,
                         ),
                       ),
                       selected: isSelected,
                       onSelected: (_) {
-                        context.read<SupportBloc>().add(ChangeFaqCategory(entry.key));
+                        context.read<SupportBloc>().add(
+                          ChangeFaqCategory(entry.key),
+                        );
                       },
                       backgroundColor: Colors.grey[100],
                       selectedColor: AppColors.primary,
                       checkmarkColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -117,7 +132,7 @@ class _FaqTabState extends State<FaqTab> {
               }
 
               if (state.faqs.isEmpty) {
-                return AnimatedEmptyWidget(
+                return const AnimatedEmptyWidget(
                   title: 'Aucune FAQ trouvée',
                   subtitle: 'Essayez une autre recherche ou catégorie',
                 );
@@ -125,7 +140,7 @@ class _FaqTabState extends State<FaqTab> {
 
               return RefreshIndicator(
                 onRefresh: () async {
-                  context.read<SupportBloc>().add(LoadFaqs());
+                  context.read<SupportBloc>().add(const LoadFaqs());
                 },
                 color: AppColors.primary,
                 child: ListView.builder(
@@ -134,7 +149,7 @@ class _FaqTabState extends State<FaqTab> {
                   itemBuilder: (context, index) {
                     final faq = state.faqs[index];
                     final isExpanded = _expandedFaqs.contains(faq.id);
-                    
+
                     return _FaqCard(
                       faq: faq,
                       isExpanded: isExpanded,
@@ -180,7 +195,7 @@ class _FaqCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -200,14 +215,17 @@ class _FaqCard extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         faq.categoryLabel,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: AppColors.primary,
@@ -248,8 +266,9 @@ class _FaqCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  crossFadeState:
-                      isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                  crossFadeState: isExpanded
+                      ? CrossFadeState.showSecond
+                      : CrossFadeState.showFirst,
                   duration: const Duration(milliseconds: 200),
                 ),
               ],

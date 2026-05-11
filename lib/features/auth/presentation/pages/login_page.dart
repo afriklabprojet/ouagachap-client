@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/form_validators.dart';
@@ -41,20 +42,18 @@ class _LoginPageState extends State<LoginPage> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthOtpSent) {
-          // Afficher message de succès avant navigation
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Code de vérification envoyé par SMS'),
-              backgroundColor: AppColors.success,
-              duration: Duration(seconds: 2),
-            ),
+          // Naviguer vers la page OTP — le message de confirmation
+          // s'affiche depuis OtpVerificationPage via postFrameCallback
+          context.go(
+            Routes.otpVerification,
+            extra: {
+              'phoneNumber': state.phone,
+              'isLogin': state.isLogin,
+              'confirmationMessage': AppLocalizations.of(
+                context,
+              )!.translate('otp_sent_confirmation'),
+            },
           );
-          
-          // Naviguer vers la page OTP
-          context.go(Routes.otpVerification, extra: {
-            'phoneNumber': state.phone,
-            'isLogin': state.isLogin,
-          });
         } else if (state is AuthSuccess) {
           // Message de succès (connexion/inscription)
           ScaffoldMessenger.of(context).showSnackBar(
@@ -103,15 +102,16 @@ class _LoginPageState extends State<LoginPage> {
                           width: 80,
                           height: 80,
                           fit: BoxFit.cover,
+                          semanticLabel: 'Logo OUAGA CHAP',
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 40),
                   // Title
-                  SlideInWidget(
-                    beginOffset: const Offset(0, 0.3),
-                    child: const Text(
+                  const SlideInWidget(
+                    beginOffset: Offset(0, 0.3),
+                    child: Text(
                       'Connexion',
                       style: TextStyle(
                         fontSize: 28,
@@ -122,16 +122,14 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 8),
                   Text(
                     'Entrez votre numéro de téléphone pour continuer',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 40),
                   // Phone field
                   TextFormField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
+                    autofillHints: const [AutofillHints.telephoneNumber],
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
                       LengthLimitingTextInputFormatter(8),
@@ -145,10 +143,7 @@ class _LoginPageState extends State<LoginPage> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text(
-                              '🇧🇫',
-                              style: TextStyle(fontSize: 20),
-                            ),
+                            const Text('🇧🇫', style: TextStyle(fontSize: 20)),
                             const SizedBox(width: 8),
                             Text(
                               '+226',
@@ -177,9 +172,37 @@ class _LoginPageState extends State<LoginPage> {
                       }
                       // Vérifier les préfixes valides au Burkina Faso
                       final prefix = digits.substring(0, 2);
-                      const validPrefixes = ['50','51','52','53','54','55','56','57','58',
-                                             '60','61','62','63','64','65','66','67','68','69',
-                                             '70','71','72','73','74','75','76','77','78','79'];
+                      const validPrefixes = [
+                        '50',
+                        '51',
+                        '52',
+                        '53',
+                        '54',
+                        '55',
+                        '56',
+                        '57',
+                        '58',
+                        '60',
+                        '61',
+                        '62',
+                        '63',
+                        '64',
+                        '65',
+                        '66',
+                        '67',
+                        '68',
+                        '69',
+                        '70',
+                        '71',
+                        '72',
+                        '73',
+                        '74',
+                        '75',
+                        '76',
+                        '77',
+                        '78',
+                        '79',
+                      ];
                       if (!validPrefixes.contains(prefix)) {
                         return 'Préfixe invalide. Utilisez un numéro Burkina Faso';
                       }

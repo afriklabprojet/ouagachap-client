@@ -1,12 +1,13 @@
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/bloc/safe_emit_mixin.dart';
 import '../../../../core/utils/error_helpers.dart';
 import '../../data/repositories/address_repository.dart';
 import '../../domain/entities/saved_address.dart';
 import 'address_event.dart';
 import 'address_state.dart';
 
-class AddressBloc extends Bloc<AddressEvent, AddressState> {
+class AddressBloc extends Bloc<AddressEvent, AddressState> with SafeEmitMixin {
   final AddressRepository _repository;
 
   AddressBloc(this._repository) : super(const AddressState()) {
@@ -26,15 +27,14 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
 
     try {
       final addresses = await _repository.getAddresses();
-      emit(state.copyWith(
-        status: AddressStatus.loaded,
-        addresses: addresses,
-      ));
+      emit(state.copyWith(status: AddressStatus.loaded, addresses: addresses));
     } catch (e) {
-      emit(state.copyWith(
-        status: AddressStatus.error,
-        errorMessage: extractUserFriendlyError(e),
-      ));
+      emit(
+        state.copyWith(
+          status: AddressStatus.error,
+          errorMessage: extractUserFriendlyError(e),
+        ),
+      );
     }
   }
 
@@ -69,15 +69,14 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
         updatedAddresses = [...state.addresses, newAddress];
       }
 
-      emit(state.copyWith(
-        isCreating: false,
-        addresses: updatedAddresses,
-      ));
+      emit(state.copyWith(isCreating: false, addresses: updatedAddresses));
     } catch (e) {
-      emit(state.copyWith(
-        isCreating: false,
-        errorMessage: extractUserFriendlyError(e),
-      ));
+      emit(
+        state.copyWith(
+          isCreating: false,
+          errorMessage: extractUserFriendlyError(e),
+        ),
+      );
     }
   }
 
@@ -116,15 +115,14 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
         }).toList();
       }
 
-      emit(state.copyWith(
-        isCreating: false,
-        addresses: updatedAddresses,
-      ));
+      emit(state.copyWith(isCreating: false, addresses: updatedAddresses));
     } catch (e) {
-      emit(state.copyWith(
-        isCreating: false,
-        errorMessage: extractUserFriendlyError(e),
-      ));
+      emit(
+        state.copyWith(
+          isCreating: false,
+          errorMessage: extractUserFriendlyError(e),
+        ),
+      );
     }
   }
 
@@ -143,23 +141,24 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
         (a) => a!.id == event.id,
         orElse: () => null,
       );
-      final updatedAddresses = state.addresses.where((a) => a.id != event.id).toList();
+      final updatedAddresses = state.addresses
+          .where((a) => a.id != event.id)
+          .toList();
 
       // Si l'adresse supprimée était par défaut, mettre la première restante par défaut
       if (deletedAddress?.isDefault == true && updatedAddresses.isNotEmpty) {
         updatedAddresses[0] = updatedAddresses[0].copyWith(isDefault: true);
       }
 
-      emit(state.copyWith(
-        isDeleting: false,
-        addresses: updatedAddresses,
-      ));
+      emit(state.copyWith(isDeleting: false, addresses: updatedAddresses));
     } catch (e) {
       if (isClosed) return;
-      emit(state.copyWith(
-        isDeleting: false,
-        errorMessage: extractUserFriendlyError(e),
-      ));
+      emit(
+        state.copyWith(
+          isDeleting: false,
+          errorMessage: extractUserFriendlyError(e),
+        ),
+      );
     }
   }
 

@@ -81,7 +81,8 @@ class AppError implements Exception {
 
 /// Service central de gestion des erreurs
 class ErrorHandlingService {
-  static final ErrorHandlingService _instance = ErrorHandlingService._internal();
+  static final ErrorHandlingService _instance =
+      ErrorHandlingService._internal();
   factory ErrorHandlingService() => _instance;
   ErrorHandlingService._internal();
 
@@ -217,7 +218,6 @@ class ErrorHandlingService {
         break;
 
       case DioExceptionType.unknown:
-      default:
         if (error.error is SocketException) {
           type = ErrorType.network;
         } else {
@@ -291,11 +291,7 @@ class ErrorDisplay extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              _getErrorIcon(),
-              size: 64,
-              color: _getErrorColor(context),
-            ),
+            Icon(_getErrorIcon(), size: 64, color: _getErrorColor(context)),
             const SizedBox(height: 16),
             Text(
               error.displayMessage,
@@ -308,8 +304,8 @@ class ErrorDisplay extends StatelessWidget {
                 error.message,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
+                  color: Theme.of(context).colorScheme.outline,
+                ),
               ),
             ],
             if (error.canRetry && onRetry != null) ...[
@@ -368,7 +364,11 @@ class ErrorDisplay extends StatelessWidget {
 }
 
 /// Snackbar pour afficher une erreur
-void showErrorSnackBar(BuildContext context, AppError error, {VoidCallback? onRetry}) {
+void showErrorSnackBar(
+  BuildContext context,
+  AppError error, {
+  VoidCallback? onRetry,
+}) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(error.displayMessage),
@@ -465,28 +465,27 @@ sealed class Result<T> {
   bool get isFailure => this is Failure<T>;
 
   T? get dataOrNull => switch (this) {
-        Success<T> s => s.data,
-        Failure<T> _ => null,
-      };
+    Success<T> s => s.data,
+    Failure<T> _ => null,
+  };
 
   AppError? get errorOrNull => switch (this) {
-        Success<T> _ => null,
-        Failure<T> f => f.error,
-      };
+    Success<T> _ => null,
+    Failure<T> f => f.error,
+  };
 
   R when<R>({
     required R Function(T data) success,
     required R Function(AppError error) failure,
-  }) =>
-      switch (this) {
-        Success<T> s => success(s.data),
-        Failure<T> f => failure(f.error),
-      };
+  }) => switch (this) {
+    Success<T> s => success(s.data),
+    Failure<T> f => failure(f.error),
+  };
 
   Result<R> map<R>(R Function(T data) transform) => switch (this) {
-        Success<T> s => Result.success(transform(s.data)),
-        Failure<T> f => Result.failure(f.error),
-      };
+    Success<T> s => Result.success(transform(s.data)),
+    Failure<T> f => Result.failure(f.error),
+  };
 }
 
 final class Success<T> extends Result<T> {

@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/di/injection.dart';
+import '../../../../core/services/app_config_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/lottie_animations.dart';
 import '../../../../core/widgets/loading_button.dart';
@@ -24,13 +26,20 @@ class _JekoRechargePageState extends State<JekoRechargePage> {
   final _amountController = TextEditingController();
   String? _selectedPaymentMethod;
 
-  // Montants prédéfinis
-  final List<int> _presetAmounts = [500, 1000, 2000, 5000, 10000, 20000];
+  // Montants prédéfinis depuis la config backend
+  late final AppConfigService _configService = getIt<AppConfigService>();
+  List<int> get _presetAmounts => _configService.cachedRechargeAmounts;
+  int get _minAmount => _configService.minRechargeAmount;
+  int get _maxAmount => _configService.maxRechargeAmount;
 
   @override
   void initState() {
     super.initState();
-    context.read<JekoPaymentBloc>().add(LoadPaymentMethods());
+    context.read<JekoPaymentBloc>()
+      ..add(LoadPaymentMethods())
+      ..add(
+        RecoverPendingPayment(),
+      ); // Reprend une transaction interrompue si l'app a été tuée pendant le paiement
   }
 
   @override
@@ -58,10 +67,10 @@ class _JekoRechargePageState extends State<JekoRechargePage> {
     }
 
     final amount = double.tryParse(_amountController.text);
-    if (amount == null || amount < 100) {
+    if (amount == null || amount < _minAmount) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Montant minimum: 100 FCFA'),
+        SnackBar(
+          content: Text('Montant minimum: $_minAmount FCFA'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -94,65 +103,70 @@ class _JekoRechargePageState extends State<JekoRechargePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Recharger mon portefeuille'),
-        centerTitle: true,
-      ),
-      body: BlocConsumer<JekoPaymentBloc, JekoPaymentState>(
-        listener: (context, state) {
-          if (state.status == JekoPaymentStatus.paymentInitiated) {
-            if (state.hasRedirectUrl) {
-              _openPaymentUrl(state.paymentResult!.redirectUrl!);
-              // Afficher le dialogue de confirmation
-              _showPaymentPendingDialog(state.paymentResult!.transactionId!);
+    return PopScope(
+      canPop: true,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Recharger mon portefeuille'),
+          centerTitle: true,
+        ),
+        body: BlocConsumer<JekoPaymentBloc, JekoPaymentState>(
+          listener: (context, state) {
+            if (state.status == JekoPaymentStatus.paymentInitiated) {
+              if (state.hasRedirectUrl) {
+                _openPaymentUrl(state.paymentResult!.redirectUrl!);
+                // Afficher le dialogue de confirmation
+                _showPaymentPendingDialog(state.paymentResult!.transactionId!);
+              }
+            } else if (state.status == JekoPaymentStatus.success) {
+              _showSuccessDialog(state.currentTransaction!);
+            } else if (state.status == JekoPaymentStatus.error) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    state.errorMessage ?? 'Une erreur est survenue',
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
             }
-          } else if (state.status == JekoPaymentStatus.success) {
-            _showSuccessDialog(state.currentTransaction!);
-          } else if (state.status == JekoPaymentStatus.error) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage ?? 'Une erreur est survenue'),
-                backgroundColor: Colors.red,
+          },
+          builder: (context, state) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Header
+                    _buildHeader(),
+                    const SizedBox(height: 24),
+
+                    // Montants prédéfinis
+                    _buildPresetAmounts(),
+                    const SizedBox(height: 16),
+
+                    // Champ montant personnalisé
+                    _buildAmountField(),
+                    const SizedBox(height: 24),
+
+                    // Méthodes de paiement
+                    _buildPaymentMethodsSection(state),
+                    const SizedBox(height: 32),
+
+                    // Bouton de paiement
+                    _buildPaymentButton(state),
+                    const SizedBox(height: 16),
+
+                    // Note de sécurité
+                    _buildSecurityNote(),
+                  ],
+                ),
               ),
             );
-          }
-        },
-        builder: (context, state) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Header
-                  _buildHeader(),
-                  const SizedBox(height: 24),
-
-                  // Montants prédéfinis
-                  _buildPresetAmounts(),
-                  const SizedBox(height: 16),
-
-                  // Champ montant personnalisé
-                  _buildAmountField(),
-                  const SizedBox(height: 24),
-
-                  // Méthodes de paiement
-                  _buildPaymentMethodsSection(state),
-                  const SizedBox(height: 32),
-
-                  // Bouton de paiement
-                  _buildPaymentButton(state),
-                  const SizedBox(height: 16),
-
-                  // Note de sécurité
-                  _buildSecurityNote(),
-                ],
-              ),
-            ),
-          );
-        },
+          },
+        ),
       ),
     );
   }
@@ -162,10 +176,7 @@ class _JekoRechargePageState extends State<JekoRechargePage> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            AppColors.primary,
-            AppColors.primary.withValues(alpha: 0.8),
-          ],
+          colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -206,10 +217,7 @@ class _JekoRechargePageState extends State<JekoRechargePage> {
       children: [
         const Text(
           'Montants rapides',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),
         Wrap(
@@ -243,20 +251,18 @@ class _JekoRechargePageState extends State<JekoRechargePage> {
         hintText: 'Entrez le montant',
         prefixIcon: const Icon(Icons.attach_money),
         suffixText: 'FCFA',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
           return 'Veuillez entrer un montant';
         }
         final amount = int.tryParse(value);
-        if (amount == null || amount < 100) {
-          return 'Montant minimum: 100 FCFA';
+        if (amount == null || amount < _minAmount) {
+          return 'Montant minimum: $_minAmount FCFA';
         }
-        if (amount > 1000000) {
-          return 'Montant maximum: 1,000,000 FCFA';
+        if (amount > _maxAmount) {
+          return 'Montant maximum: $_maxAmount FCFA';
         }
         return null;
       },
@@ -298,25 +304,28 @@ class _JekoRechargePageState extends State<JekoRechargePage> {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Mode de paiement',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+    return RadioGroup<String>(
+      groupValue: _selectedPaymentMethod,
+      onChanged: (value) => setState(() => _selectedPaymentMethod = value),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Mode de paiement',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
-        ),
-        const SizedBox(height: 12),
-        ...state.paymentMethods.map((method) => _buildPaymentMethodTile(method)),
-      ],
+          const SizedBox(height: 12),
+          ...state.paymentMethods.map(
+            (method) => _buildPaymentMethodTile(method),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildPaymentMethodTile(JekoPaymentMethod method) {
     final isSelected = _selectedPaymentMethod == method.code;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
@@ -329,31 +338,18 @@ class _JekoRechargePageState extends State<JekoRechargePage> {
       ),
       child: RadioListTile<String>(
         value: method.code,
-        groupValue: _selectedPaymentMethod,
-        onChanged: (value) {
-          setState(() {
-            _selectedPaymentMethod = value;
-          });
-        },
         title: Row(
           children: [
-            Text(
-              method.icon,
-              style: const TextStyle(fontSize: 24),
-            ),
+            Text(method.icon, style: const TextStyle(fontSize: 24)),
             const SizedBox(width: 12),
             Text(
               method.name,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w500),
             ),
           ],
         ),
-        activeColor: AppColors.primary,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        fillColor: WidgetStateProperty.all(AppColors.primary),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -379,19 +375,12 @@ class _JekoRechargePageState extends State<JekoRechargePage> {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.security,
-            color: Colors.blue.shade700,
-            size: 20,
-          ),
+          Icon(Icons.security, color: Colors.blue.shade700, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               'Paiement sécurisé via JEKO. Vous serez redirigé vers votre application de paiement.',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.blue.shade700,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.blue.shade700),
             ),
           ),
         ],
@@ -415,9 +404,7 @@ class _JekoRechargePageState extends State<JekoRechargePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Vous avez été redirigé vers votre application de paiement.',
-            ),
+            Text('Vous avez été redirigé vers votre application de paiement.'),
             SizedBox(height: 12),
             Text(
               'Complétez le paiement puis revenez ici pour vérifier le statut.',
@@ -455,7 +442,8 @@ class _JekoRechargePageState extends State<JekoRechargePage> {
     AnimatedSuccessDialog.show(
       context,
       title: 'Paiement réussi',
-      message: 'Votre portefeuille a été crédité via ${transaction.paymentMethodName}\n${transaction.formattedAmount}',
+      message:
+          'Votre portefeuille a été crédité via ${transaction.paymentMethodName}\n${transaction.formattedAmount}',
       buttonText: 'Fermer',
       onDismiss: () {
         Navigator.of(context).pop(); // Retour à l'écran précédent

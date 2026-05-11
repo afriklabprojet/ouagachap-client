@@ -1,45 +1,76 @@
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/bloc/safe_emit_mixin.dart';
 import '../../../../core/utils/error_helpers.dart';
 import '../../data/repositories/jeko_payment_repository.dart';
 import 'jeko_payment_event.dart';
 import 'jeko_payment_state.dart';
 
-class JekoPaymentBloc extends Bloc<JekoPaymentEvent, JekoPaymentState> {
+class JekoPaymentBloc extends Bloc<JekoPaymentEvent, JekoPaymentState>
+    with SafeEmitMixin {
   final JekoPaymentRepository _repository;
+  final SharedPreferences _prefs;
 
-  JekoPaymentBloc(this._repository) : super(const JekoPaymentState()) {
+  /// Clé SharedPreferences pour persister le `transactionId` en cours.
+  static const String _pendingTxKey = 'jeko_pending_transaction_id';
+
+  JekoPaymentBloc(this._repository, this._prefs)
+    : super(const JekoPaymentState()) {
     on<LoadPaymentMethods>(_onLoadPaymentMethods, transformer: restartable());
     // droppable() → ignore les double-taps (évite double paiement)
-    on<InitiateWalletRecharge>(_onInitiateWalletRecharge, transformer: droppable());
+    on<InitiateWalletRecharge>(
+      _onInitiateWalletRecharge,
+      transformer: droppable(),
+    );
     on<InitiateOrderPayment>(_onInitiateOrderPayment, transformer: droppable());
-    on<CheckTransactionStatus>(_onCheckTransactionStatus, transformer: droppable());
-    on<LoadTransactionHistory>(_onLoadTransactionHistory, transformer: restartable());
-    on<PaymentSuccessCallback>(_onPaymentSuccessCallback, transformer: droppable());
+    on<CheckTransactionStatus>(
+      _onCheckTransactionStatus,
+      transformer: droppable(),
+    );
+    on<LoadTransactionHistory>(
+      _onLoadTransactionHistory,
+      transformer: restartable(),
+    );
+    on<PaymentSuccessCallback>(
+      _onPaymentSuccessCallback,
+      transformer: droppable(),
+    );
     on<PaymentErrorCallback>(_onPaymentErrorCallback, transformer: droppable());
     on<ResetPaymentState>(_onResetPaymentState);
+    on<RecoverPendingPayment>(
+      _onRecoverPendingPayment,
+      transformer: droppable(),
+    );
   }
 
   Future<void> _onLoadPaymentMethods(
     LoadPaymentMethods event,
     Emitter<JekoPaymentState> emit,
   ) async {
-    emit(state.copyWith(
-      status: JekoPaymentStatus.loadingMethods,
-      clearError: true,
-    ));
+    emit(
+      state.copyWith(
+        status: JekoPaymentStatus.loadingMethods,
+        clearError: true,
+      ),
+    );
 
     try {
       final methods = await _repository.getPaymentMethods();
-      emit(state.copyWith(
-        status: JekoPaymentStatus.methodsLoaded,
-        paymentMethods: methods,
-      ));
+      emit(
+        state.copyWith(
+          status: JekoPaymentStatus.methodsLoaded,
+          paymentMethods: methods,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        status: JekoPaymentStatus.error,
-        errorMessage: extractUserFriendlyError(e),
-      ));
+      emit(
+        state.copyWith(
+          status: JekoPaymentStatus.error,
+          errorMessage: extractUserFriendlyError(e),
+        ),
+      );
     }
   }
 
@@ -47,11 +78,13 @@ class JekoPaymentBloc extends Bloc<JekoPaymentEvent, JekoPaymentState> {
     InitiateWalletRecharge event,
     Emitter<JekoPaymentState> emit,
   ) async {
-    emit(state.copyWith(
-      status: JekoPaymentStatus.initiatingPayment,
-      clearError: true,
-      clearPaymentResult: true,
-    ));
+    emit(
+      state.copyWith(
+        status: JekoPaymentStatus.initiatingPayment,
+        clearError: true,
+        clearPaymentResult: true,
+      ),
+    );
 
     try {
       final result = await _repository.initiateWalletRecharge(
@@ -60,21 +93,33 @@ class JekoPaymentBloc extends Bloc<JekoPaymentEvent, JekoPaymentState> {
       );
 
       if (result.success) {
-        emit(state.copyWith(
-          status: JekoPaymentStatus.paymentInitiated,
-          paymentResult: result,
-        ));
+        // Persister le transactionId : si l'app est tuée avant le deep link,
+        // RecoverPendingPayment le retrouvera et vérifiera le statut.
+        if (result.transactionId != null) {
+          await _prefs.setInt(_pendingTxKey, result.transactionId!);
+        }
+        emit(
+          state.copyWith(
+            status: JekoPaymentStatus.paymentInitiated,
+            paymentResult: result,
+          ),
+        );
       } else {
-        emit(state.copyWith(
-          status: JekoPaymentStatus.error,
-          errorMessage: result.message ?? 'Erreur lors de l\'initiation du paiement',
-        ));
+        emit(
+          state.copyWith(
+            status: JekoPaymentStatus.error,
+            errorMessage:
+                result.message ?? 'Erreur lors de l\'initiation du paiement',
+          ),
+        );
       }
     } catch (e) {
-      emit(state.copyWith(
-        status: JekoPaymentStatus.error,
-        errorMessage: extractUserFriendlyError(e),
-      ));
+      emit(
+        state.copyWith(
+          status: JekoPaymentStatus.error,
+          errorMessage: extractUserFriendlyError(e),
+        ),
+      );
     }
   }
 
@@ -82,11 +127,13 @@ class JekoPaymentBloc extends Bloc<JekoPaymentEvent, JekoPaymentState> {
     InitiateOrderPayment event,
     Emitter<JekoPaymentState> emit,
   ) async {
-    emit(state.copyWith(
-      status: JekoPaymentStatus.initiatingPayment,
-      clearError: true,
-      clearPaymentResult: true,
-    ));
+    emit(
+      state.copyWith(
+        status: JekoPaymentStatus.initiatingPayment,
+        clearError: true,
+        clearPaymentResult: true,
+      ),
+    );
 
     try {
       final result = await _repository.initiateOrderPayment(
@@ -95,21 +142,31 @@ class JekoPaymentBloc extends Bloc<JekoPaymentEvent, JekoPaymentState> {
       );
 
       if (result.success) {
-        emit(state.copyWith(
-          status: JekoPaymentStatus.paymentInitiated,
-          paymentResult: result,
-        ));
+        if (result.transactionId != null) {
+          await _prefs.setInt(_pendingTxKey, result.transactionId!);
+        }
+        emit(
+          state.copyWith(
+            status: JekoPaymentStatus.paymentInitiated,
+            paymentResult: result,
+          ),
+        );
       } else {
-        emit(state.copyWith(
-          status: JekoPaymentStatus.error,
-          errorMessage: result.message ?? 'Erreur lors de l\'initiation du paiement',
-        ));
+        emit(
+          state.copyWith(
+            status: JekoPaymentStatus.error,
+            errorMessage:
+                result.message ?? 'Erreur lors de l\'initiation du paiement',
+          ),
+        );
       }
     } catch (e) {
-      emit(state.copyWith(
-        status: JekoPaymentStatus.error,
-        errorMessage: extractUserFriendlyError(e),
-      ));
+      emit(
+        state.copyWith(
+          status: JekoPaymentStatus.error,
+          errorMessage: extractUserFriendlyError(e),
+        ),
+      );
     }
   }
 
@@ -117,22 +174,34 @@ class JekoPaymentBloc extends Bloc<JekoPaymentEvent, JekoPaymentState> {
     CheckTransactionStatus event,
     Emitter<JekoPaymentState> emit,
   ) async {
-    emit(state.copyWith(
-      status: JekoPaymentStatus.checkingStatus,
-      clearError: true,
-    ));
+    emit(
+      state.copyWith(
+        status: JekoPaymentStatus.checkingStatus,
+        clearError: true,
+      ),
+    );
 
     try {
-      final transaction = await _repository.checkTransactionStatus(event.transactionId);
-      emit(state.copyWith(
-        status: JekoPaymentStatus.statusChecked,
-        currentTransaction: transaction,
-      ));
+      final transaction = await _repository.checkTransactionStatus(
+        event.transactionId,
+      );
+      // Transaction résolue (succès ou échec) : supprimer la persistance locale
+      if (!transaction.isPending) {
+        await _prefs.remove(_pendingTxKey);
+      }
+      emit(
+        state.copyWith(
+          status: JekoPaymentStatus.statusChecked,
+          currentTransaction: transaction,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        status: JekoPaymentStatus.error,
-        errorMessage: extractUserFriendlyError(e),
-      ));
+      emit(
+        state.copyWith(
+          status: JekoPaymentStatus.error,
+          errorMessage: extractUserFriendlyError(e),
+        ),
+      );
     }
   }
 
@@ -140,14 +209,18 @@ class JekoPaymentBloc extends Bloc<JekoPaymentEvent, JekoPaymentState> {
     LoadTransactionHistory event,
     Emitter<JekoPaymentState> emit,
   ) async {
-    emit(state.copyWith(
-      status: JekoPaymentStatus.loadingHistory,
-      clearError: true,
-    ));
+    emit(
+      state.copyWith(
+        status: JekoPaymentStatus.loadingHistory,
+        clearError: true,
+      ),
+    );
 
     try {
-      final transactions = await _repository.getTransactionHistory(page: event.page);
-      
+      final transactions = await _repository.getTransactionHistory(
+        page: event.page,
+      );
+
       final List<dynamic> allTransactions;
       if (event.page == 1) {
         allTransactions = transactions;
@@ -155,17 +228,21 @@ class JekoPaymentBloc extends Bloc<JekoPaymentEvent, JekoPaymentState> {
         allTransactions = [...state.transactionHistory, ...transactions];
       }
 
-      emit(state.copyWith(
-        status: JekoPaymentStatus.historyLoaded,
-        transactionHistory: allTransactions.cast(),
-        currentPage: event.page,
-        hasMoreHistory: transactions.length >= 20,
-      ));
+      emit(
+        state.copyWith(
+          status: JekoPaymentStatus.historyLoaded,
+          transactionHistory: allTransactions.cast(),
+          currentPage: event.page,
+          hasMoreHistory: transactions.length >= 20,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        status: JekoPaymentStatus.error,
-        errorMessage: extractUserFriendlyError(e),
-      ));
+      emit(
+        state.copyWith(
+          status: JekoPaymentStatus.error,
+          errorMessage: extractUserFriendlyError(e),
+        ),
+      );
     }
   }
 
@@ -173,22 +250,30 @@ class JekoPaymentBloc extends Bloc<JekoPaymentEvent, JekoPaymentState> {
     PaymentSuccessCallback event,
     Emitter<JekoPaymentState> emit,
   ) async {
-    emit(state.copyWith(
-      status: JekoPaymentStatus.checkingStatus,
-      clearError: true,
-    ));
+    emit(
+      state.copyWith(
+        status: JekoPaymentStatus.checkingStatus,
+        clearError: true,
+      ),
+    );
 
     try {
-      final transaction = await _repository.paymentSuccessCallback(event.transactionId);
-      emit(state.copyWith(
-        status: JekoPaymentStatus.success,
-        currentTransaction: transaction,
-      ));
+      final transaction = await _repository.paymentSuccessCallback(
+        event.transactionId,
+      );
+      emit(
+        state.copyWith(
+          status: JekoPaymentStatus.success,
+          currentTransaction: transaction,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        status: JekoPaymentStatus.error,
-        errorMessage: extractUserFriendlyError(e),
-      ));
+      emit(
+        state.copyWith(
+          status: JekoPaymentStatus.error,
+          errorMessage: extractUserFriendlyError(e),
+        ),
+      );
     }
   }
 
@@ -202,21 +287,40 @@ class JekoPaymentBloc extends Bloc<JekoPaymentEvent, JekoPaymentState> {
       // Ignorer les erreurs de callback d'erreur
     }
 
-    emit(state.copyWith(
-      status: JekoPaymentStatus.error,
-      errorMessage: 'Le paiement a échoué ou a été annulé',
-    ));
+    emit(
+      state.copyWith(
+        status: JekoPaymentStatus.error,
+        errorMessage: 'Le paiement a échoué ou a été annulé',
+      ),
+    );
   }
 
   void _onResetPaymentState(
     ResetPaymentState event,
     Emitter<JekoPaymentState> emit,
   ) {
-    emit(state.copyWith(
-      status: JekoPaymentStatus.initial,
-      clearPaymentResult: true,
-      clearCurrentTransaction: true,
-      clearError: true,
-    ));
+    emit(
+      state.copyWith(
+        status: JekoPaymentStatus.initial,
+        clearPaymentResult: true,
+        clearCurrentTransaction: true,
+        clearError: true,
+      ),
+    );
+  }
+
+  /// Vérifie si une transaction est en attente depuis la dernière session.
+  /// Si oui, déclenche une vérification de statut silencieuse.
+  Future<void> _onRecoverPendingPayment(
+    RecoverPendingPayment event,
+    Emitter<JekoPaymentState> emit,
+  ) async {
+    final pendingId = _prefs.getInt(_pendingTxKey);
+    if (pendingId == null) return; // Rien à récupérer
+
+    debugPrint(
+      '[JekoPaymentBloc] Récupération transaction en attente: $pendingId',
+    );
+    add(CheckTransactionStatus(pendingId));
   }
 }

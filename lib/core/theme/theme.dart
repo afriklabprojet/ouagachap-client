@@ -1,5 +1,4 @@
-/// Exports du thème de l'application OUAGA CHAP
-library ouaga_chap_theme;
+// Exports du thème de l'application OUAGA CHAP
 
 export 'app_animations.dart';
 export 'app_colors.dart';

@@ -51,10 +51,7 @@ class LottieAnimation extends StatelessWidget {
   }
 
   /// Animation d'erreur
-  factory LottieAnimation.error({
-    double? size,
-    bool repeat = false,
-  }) {
+  factory LottieAnimation.error({double? size, bool repeat = false}) {
     return LottieAnimation(
       asset: LottieAssets.error,
       width: size ?? 120,
@@ -64,9 +61,7 @@ class LottieAnimation extends StatelessWidget {
   }
 
   /// Animation de chargement
-  factory LottieAnimation.loading({
-    double? size,
-  }) {
+  factory LottieAnimation.loading({double? size}) {
     return LottieAnimation(
       asset: LottieAssets.loading,
       width: size ?? 80,
@@ -76,9 +71,7 @@ class LottieAnimation extends StatelessWidget {
   }
 
   /// Animation état vide
-  factory LottieAnimation.empty({
-    double? size,
-  }) {
+  factory LottieAnimation.empty({double? size}) {
     return LottieAnimation(
       asset: LottieAssets.empty,
       width: size ?? 150,
@@ -88,10 +81,7 @@ class LottieAnimation extends StatelessWidget {
   }
 
   /// Animation de livraison
-  factory LottieAnimation.delivery({
-    double? width,
-    double? height,
-  }) {
+  factory LottieAnimation.delivery({double? width, double? height}) {
     return LottieAnimation(
       asset: LottieAssets.delivery,
       width: width ?? 200,
@@ -116,11 +106,7 @@ class LottieAnimation extends StatelessWidget {
         return SizedBox(
           width: width ?? 100,
           height: height ?? 100,
-          child: const Icon(
-            Icons.animation,
-            size: 40,
-            color: Colors.grey,
-          ),
+          child: const Icon(Icons.animation, size: 40, color: Colors.grey),
         );
       },
     );
@@ -185,7 +171,7 @@ class AnimatedEmptyWidget extends StatelessWidget {
     this.animationSize = 150,
     this.icon, // Ignoré, pour compatibilité
   });
-  
+
   String? get _displaySubtitle => subtitle ?? message;
 
   @override
@@ -200,27 +186,24 @@ class AnimatedEmptyWidget extends StatelessWidget {
             const SizedBox(height: 24),
             Text(
               title,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
               textAlign: TextAlign.center,
             ),
             if (_displaySubtitle != null) ...[
               const SizedBox(height: 8),
               Text(
                 _displaySubtitle!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey.shade600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
                 textAlign: TextAlign.center,
               ),
             ],
             if (actionText != null && onAction != null) ...[
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: onAction,
-                child: Text(actionText!),
-              ),
+              ElevatedButton(onPressed: onAction, child: Text(actionText!)),
             ],
           ],
         ),
@@ -290,20 +273,24 @@ class _AnimatedSuccessWidgetState extends State<AnimatedSuccessWidget> {
               const SizedBox(height: 8),
               Text(
                 widget.subtitle!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey.shade600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
                 textAlign: TextAlign.center,
               ),
             ],
-            if (widget.buttonText != null && widget.onButtonPressed != null) ...[
+            if (widget.buttonText != null &&
+                widget.onButtonPressed != null) ...[
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: widget.onButtonPressed,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 14,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -336,7 +323,7 @@ class AnimatedErrorWidget extends StatelessWidget {
     this.onRetry,
     this.animationSize = 120,
   });
-  
+
   String? get _displaySubtitle => subtitle ?? message;
 
   @override
@@ -362,9 +349,9 @@ class AnimatedErrorWidget extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 _displaySubtitle!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey.shade600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -377,7 +364,10 @@ class AnimatedErrorWidget extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red.shade600,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -407,8 +397,6 @@ class AnimatedSuccessDialog extends StatelessWidget {
     this.onDismiss,
     this.onPressed,
   });
-  
-  VoidCallback? get _callback => onDismiss ?? onPressed;
 
   static Future<void> show(
     BuildContext context, {
@@ -433,9 +421,7 @@ class AnimatedSuccessDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -445,20 +431,14 @@ class AnimatedSuccessDialog extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             if (message != null) ...[
               const SizedBox(height: 8),
               Text(
                 message!,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                 textAlign: TextAlign.center,
               ),
             ],

@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../domain/entities/faq.dart';
-import '../../domain/entities/contact_info.dart';
-import '../../domain/entities/support_chat.dart';
-import '../../domain/entities/complaint.dart';
 import '../bloc/support_bloc.dart';
 import '../bloc/support_event.dart';
 import '../bloc/support_state.dart';
@@ -21,18 +16,19 @@ class SupportPage extends StatefulWidget {
   State<SupportPage> createState() => _SupportPageState();
 }
 
-class _SupportPageState extends State<SupportPage> with SingleTickerProviderStateMixin {
+class _SupportPageState extends State<SupportPage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    
+
     // Charger les données initiales
     final bloc = context.read<SupportBloc>();
     bloc.add(LoadContactInfo());
-    bloc.add(LoadFaqs());
+    bloc.add(const LoadFaqs());
     bloc.add(LoadChats());
     bloc.add(LoadComplaints());
   }
@@ -61,18 +57,27 @@ class _SupportPageState extends State<SupportPage> with SingleTickerProviderStat
           unselectedLabelColor: Colors.grey,
           indicatorColor: AppColors.primary,
           indicatorWeight: 3,
-          labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+          labelStyle: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
           unselectedLabelStyle: const TextStyle(fontSize: 13),
           tabs: [
             const Tab(icon: Icon(Icons.help_outline, size: 20), text: 'FAQ'),
             BlocBuilder<SupportBloc, SupportState>(
               buildWhen: (prev, curr) => prev.chats != curr.chats,
               builder: (context, state) {
-                final unread = state.chats.fold(0, (sum, c) => sum + c.unreadCount);
+                final unread = state.chats.fold(
+                  0,
+                  (sum, c) => sum + c.unreadCount,
+                );
                 return Tab(
                   icon: Badge(
                     isLabelVisible: unread > 0,
-                    label: Text('$unread', style: const TextStyle(fontSize: 10)),
+                    label: Text(
+                      '$unread',
+                      style: const TextStyle(fontSize: 10),
+                    ),
                     child: const Icon(Icons.chat_bubble_outline, size: 20),
                   ),
                   text: 'Chat',
@@ -82,18 +87,27 @@ class _SupportPageState extends State<SupportPage> with SingleTickerProviderStat
             BlocBuilder<SupportBloc, SupportState>(
               buildWhen: (prev, curr) => prev.complaints != curr.complaints,
               builder: (context, state) {
-                final unread = state.complaints.fold(0, (sum, c) => sum + c.unreadCount);
+                final unread = state.complaints.fold(
+                  0,
+                  (sum, c) => sum + c.unreadCount,
+                );
                 return Tab(
                   icon: Badge(
                     isLabelVisible: unread > 0,
-                    label: Text('$unread', style: const TextStyle(fontSize: 10)),
+                    label: Text(
+                      '$unread',
+                      style: const TextStyle(fontSize: 10),
+                    ),
                     child: const Icon(Icons.report_problem_outlined, size: 20),
                   ),
                   text: 'Tickets',
                 );
               },
             ),
-            const Tab(icon: Icon(Icons.phone_outlined, size: 20), text: 'Contact'),
+            const Tab(
+              icon: Icon(Icons.phone_outlined, size: 20),
+              text: 'Contact',
+            ),
           ],
         ),
       ),
@@ -107,7 +121,8 @@ class _SupportPageState extends State<SupportPage> with SingleTickerProviderStat
                 action: SnackBarAction(
                   label: 'OK',
                   textColor: Colors.white,
-                  onPressed: () => context.read<SupportBloc>().add(ClearSupportError()),
+                  onPressed: () =>
+                      context.read<SupportBloc>().add(ClearSupportError()),
                 ),
               ),
             );
@@ -115,12 +130,7 @@ class _SupportPageState extends State<SupportPage> with SingleTickerProviderStat
         },
         child: TabBarView(
           controller: _tabController,
-          children: const [
-            FaqTab(),
-            ChatTab(),
-            ComplaintsTab(),
-            ContactTab(),
-          ],
+          children: const [FaqTab(), ChatTab(), ComplaintsTab(), ContactTab()],
         ),
       ),
     );

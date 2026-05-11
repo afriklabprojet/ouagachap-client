@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
 /// Widget d'erreur réutilisable avec option de retry
-class ErrorWidget extends StatelessWidget {
+class AppErrorWidget extends StatelessWidget {
   final String title;
   final String? message;
   final VoidCallback? onRetry;
@@ -10,7 +10,7 @@ class ErrorWidget extends StatelessWidget {
   final Color? iconColor;
   final bool compact;
 
-  const ErrorWidget({
+  const AppErrorWidget({
     super.key,
     this.title = 'Une erreur est survenue',
     this.message,
@@ -21,8 +21,8 @@ class ErrorWidget extends StatelessWidget {
   });
 
   /// Erreur de connexion réseau
-  factory ErrorWidget.network({VoidCallback? onRetry}) {
-    return ErrorWidget(
+  factory AppErrorWidget.network({VoidCallback? onRetry}) {
+    return AppErrorWidget(
       icon: Icons.wifi_off_outlined,
       title: 'Pas de connexion',
       message: 'Vérifiez votre connexion internet',
@@ -31,8 +31,8 @@ class ErrorWidget extends StatelessWidget {
   }
 
   /// Erreur serveur
-  factory ErrorWidget.server({VoidCallback? onRetry}) {
-    return ErrorWidget(
+  factory AppErrorWidget.server({VoidCallback? onRetry}) {
+    return AppErrorWidget(
       icon: Icons.cloud_off_outlined,
       title: 'Erreur serveur',
       message: 'Le serveur est indisponible. Réessayez plus tard.',
@@ -41,8 +41,8 @@ class ErrorWidget extends StatelessWidget {
   }
 
   /// Timeout
-  factory ErrorWidget.timeout({VoidCallback? onRetry}) {
-    return ErrorWidget(
+  factory AppErrorWidget.timeout({VoidCallback? onRetry}) {
+    return AppErrorWidget(
       icon: Icons.hourglass_empty,
       title: 'Délai dépassé',
       message: 'La requête a pris trop de temps',
@@ -51,8 +51,8 @@ class ErrorWidget extends StatelessWidget {
   }
 
   /// Session expirée
-  factory ErrorWidget.sessionExpired({VoidCallback? onLogin}) {
-    return ErrorWidget(
+  factory AppErrorWidget.sessionExpired({VoidCallback? onLogin}) {
+    return AppErrorWidget(
       icon: Icons.lock_outline,
       title: 'Session expirée',
       message: 'Veuillez vous reconnecter',
@@ -61,8 +61,8 @@ class ErrorWidget extends StatelessWidget {
   }
 
   /// Erreur de localisation
-  factory ErrorWidget.location({VoidCallback? onRetry}) {
-    return ErrorWidget(
+  factory AppErrorWidget.location({VoidCallback? onRetry}) {
+    return AppErrorWidget(
       icon: Icons.location_off_outlined,
       title: 'Localisation indisponible',
       message: 'Impossible d\'obtenir votre position',
@@ -71,8 +71,8 @@ class ErrorWidget extends StatelessWidget {
   }
 
   /// Erreur de permission
-  factory ErrorWidget.permission({VoidCallback? onSettings}) {
-    return ErrorWidget(
+  factory AppErrorWidget.permission({VoidCallback? onSettings}) {
+    return AppErrorWidget(
       icon: Icons.block_outlined,
       title: 'Permission refusée',
       message: 'Activez les permissions dans les paramètres',
@@ -92,10 +92,10 @@ class ErrorWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.error.withOpacity(0.1),
+        color: AppColors.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColors.error.withOpacity(0.3),
+          color: AppColors.error.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -113,7 +113,7 @@ class ErrorWidget extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: AppColors.error,
@@ -125,7 +125,7 @@ class ErrorWidget extends StatelessWidget {
                     message!,
                     style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.error.withOpacity(0.8),
+                      color: AppColors.error.withValues(alpha: 0.8),
                     ),
                   ),
                 ],
@@ -160,7 +160,7 @@ class ErrorWidget extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: (iconColor ?? AppColors.error).withOpacity(0.1),
+                color: (iconColor ?? AppColors.error).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(

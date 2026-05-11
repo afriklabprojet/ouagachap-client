@@ -1,12 +1,14 @@
+import '../../domain/repositories/jeko_payment_repository.dart';
 import '../datasources/jeko_payment_datasource.dart';
 
 /// Repository pour les paiements JEKO
-class JekoPaymentRepository {
+class JekoPaymentRepository implements JekoPaymentRepositoryInterface {
   final JekoPaymentRemoteDataSource _remoteDataSource;
 
   JekoPaymentRepository(this._remoteDataSource);
 
   /// Récupérer les méthodes de paiement disponibles
+  @override
   Future<List<JekoPaymentMethod>> getPaymentMethods() async {
     try {
       return await _remoteDataSource.getPaymentMethods();
@@ -16,6 +18,7 @@ class JekoPaymentRepository {
   }
 
   /// Initier une recharge de wallet
+  @override
   Future<JekoPaymentResult> initiateWalletRecharge({
     required double amount,
     required String paymentMethod,
@@ -31,6 +34,7 @@ class JekoPaymentRepository {
   }
 
   /// Initier le paiement d'une commande
+  @override
   Future<JekoPaymentResult> initiateOrderPayment({
     required String orderId,
     required String paymentMethod,
@@ -46,6 +50,7 @@ class JekoPaymentRepository {
   }
 
   /// Vérifier le statut d'une transaction
+  @override
   Future<JekoTransaction> checkTransactionStatus(int transactionId) async {
     try {
       return await _remoteDataSource.checkTransactionStatus(transactionId);
@@ -55,6 +60,7 @@ class JekoPaymentRepository {
   }
 
   /// Récupérer l'historique des transactions
+  @override
   Future<List<JekoTransaction>> getTransactionHistory({int page = 1}) async {
     try {
       return await _remoteDataSource.getTransactionHistory(page: page);
@@ -64,6 +70,7 @@ class JekoPaymentRepository {
   }
 
   /// Callback après paiement réussi
+  @override
   Future<JekoTransaction> paymentSuccessCallback(int transactionId) async {
     try {
       return await _remoteDataSource.paymentSuccessCallback(transactionId);
@@ -73,6 +80,7 @@ class JekoPaymentRepository {
   }
 
   /// Callback après paiement échoué
+  @override
   Future<void> paymentErrorCallback(int transactionId) async {
     try {
       await _remoteDataSource.paymentErrorCallback(transactionId);

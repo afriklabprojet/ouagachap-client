@@ -1,11 +1,13 @@
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/bloc/safe_emit_mixin.dart';
 import '../../../../core/utils/error_helpers.dart';
 import '../../domain/repositories/wallet_repository.dart';
 import 'wallet_event.dart';
 import 'wallet_state.dart';
 
-class WalletBloc extends Bloc<WalletEvent, WalletState> {
+class WalletBloc extends Bloc<WalletEvent, WalletState>
+    with SafeEmitMixin {
   final WalletRepository walletRepository;
 
   WalletBloc({required this.walletRepository}) : super(WalletInitial()) {
@@ -22,11 +24,9 @@ class WalletBloc extends Bloc<WalletEvent, WalletState> {
     emit(WalletLoading());
     try {
       final wallet = await walletRepository.getWallet();
-      if (isClosed) return;
-      emit(WalletLoaded(wallet: wallet));
+      safeEmit(emit, WalletLoaded(wallet: wallet));
     } catch (e) {
-      if (isClosed) return;
-      emit(WalletError(message: extractUserFriendlyError(e)));
+      safeEmit(emit, WalletError(message: extractUserFriendlyError(e)));
     }
   }
 
@@ -53,15 +53,12 @@ class WalletBloc extends Bloc<WalletEvent, WalletState> {
       // Recharger le portefeuille pour avoir le solde mis à jour
       try {
         final wallet = await walletRepository.getWallet();
-        if (isClosed) return;
-        emit(RechargeSuccess(message: message, wallet: wallet));
+        safeEmit(emit, RechargeSuccess(message: message, wallet: wallet));
       } catch (_) {
-        if (isClosed) return;
-        emit(RechargeSuccess(message: message, wallet: currentWallet));
+        safeEmit(emit, RechargeSuccess(message: message, wallet: currentWallet));
       }
     } catch (e) {
-      if (isClosed) return;
-      emit(RechargeError(
+      safeEmit(emit, RechargeError(
         message: e.toString(),
         currentWallet: currentWallet,
       ));

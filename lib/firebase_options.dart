@@ -17,7 +17,10 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      return web;
+      throw UnsupportedError(
+        'DefaultFirebaseOptions have not been configured for web - '
+        'you can reconfigure this by running the FlutterFire CLI again.',
+      );
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -25,9 +28,15 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        return macos;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for macos - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.windows:
-        return web;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for windows - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -40,38 +49,21 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDT6eV9wiOEAqunalu7Oj6bsA-c5RvimEM',
-    appId: '1:464512136513:android:8668aa14c37fb4386bddc0',
-    messagingSenderId: '464512136513',
-    projectId: 'ouaga-chap-a888e',
-    authDomain: 'ouaga-chap-a888e.firebaseapp.com',
-    storageBucket: 'ouaga-chap-a888e.firebasestorage.app',
-  );
-
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDT6eV9wiOEAqunalu7Oj6bsA-c5RvimEM',
-    appId: '1:464512136513:android:8668aa14c37fb4386bddc0',
-    messagingSenderId: '464512136513',
-    projectId: 'ouaga-chap-a888e',
-    storageBucket: 'ouaga-chap-a888e.firebasestorage.app',
+    apiKey: 'AIzaSyCBhDthEwixxTOtpPGpE2Z9S83f1yqiv80',
+    appId: '1:610356092783:android:b9db260f22cc1438da529a',
+    messagingSenderId: '610356092783',
+    projectId: 'ouagachap-86e0d',
+    storageBucket: 'ouagachap-86e0d.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBueqG0lKCoUm--WidQYHJ2OI_DPY-QXMo',
-    appId: '1:464512136513:ios:4b6c7b6e3b5472706bddc0',
-    messagingSenderId: '464512136513',
-    projectId: 'ouaga-chap-a888e',
-    storageBucket: 'ouaga-chap-a888e.firebasestorage.app',
+    apiKey: 'AIzaSyDo1Cp0j--88ImBgGc1vKOfhF5Ie1g5xyU',
+    appId: '1:610356092783:ios:b472dd4e8f994798da529a',
+    messagingSenderId: '610356092783',
+    projectId: 'ouagachap-86e0d',
+    storageBucket: 'ouagachap-86e0d.firebasestorage.app',
     iosBundleId: 'bf.ouagachap.ouagaChapClient',
   );
 
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyBueqG0lKCoUm--WidQYHJ2OI_DPY-QXMo',
-    appId: '1:464512136513:ios:4b6c7b6e3b5472706bddc0',
-    messagingSenderId: '464512136513',
-    projectId: 'ouaga-chap-a888e',
-    storageBucket: 'ouaga-chap-a888e.firebasestorage.app',
-    iosBundleId: 'bf.ouagachap.ouagaChapClient',
-  );
 }

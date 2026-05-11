@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import '../../domain/entities/notification.dart';
 
 abstract class NotificationEvent extends Equatable {
   const NotificationEvent();

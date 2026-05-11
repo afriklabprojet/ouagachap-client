@@ -3,15 +3,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/status_mapper.dart';
 import '../../../order/domain/entities/order.dart';
 
 class ActiveOrderCard extends StatelessWidget {
   final Order order;
 
-  const ActiveOrderCard({
-    super.key,
-    required this.order,
-  });
+  const ActiveOrderCard({super.key, required this.order});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +23,7 @@ class ActiveOrderCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -39,9 +37,12 @@ class ActiveOrderCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(order.status).withOpacity(0.1),
+                    color: _getStatusColor(order.status).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -69,10 +70,7 @@ class ActiveOrderCard extends StatelessWidget {
                 ),
                 Text(
                   '#${order.trackingNumber.substring(0, 8)}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[500],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                 ),
               ],
             ),
@@ -90,16 +88,8 @@ class ActiveOrderCard extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                     ),
-                    Container(
-                      width: 2,
-                      height: 30,
-                      color: Colors.grey[300],
-                    ),
-                    Icon(
-                      Icons.location_on,
-                      size: 16,
-                      color: Colors.grey[600],
-                    ),
+                    Container(width: 2, height: 30, color: Colors.grey[300]),
+                    Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
                   ],
                 ),
                 const SizedBox(width: 12),
@@ -145,7 +135,10 @@ class ActiveOrderCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primary,
                     borderRadius: BorderRadius.circular(20),
@@ -174,22 +167,8 @@ class ActiveOrderCard extends StatelessWidget {
     );
   }
 
-  Color _getStatusColor(OrderStatus status) {
-    switch (status) {
-      case OrderStatus.pending:
-        return AppColors.warning;
-      case OrderStatus.accepted:
-        return AppColors.info;
-      case OrderStatus.pickingUp:
-        return AppColors.secondary;
-      case OrderStatus.inTransit:
-        return AppColors.primary;
-      case OrderStatus.delivered:
-        return AppColors.success;
-      case OrderStatus.cancelled:
-        return AppColors.error;
-    }
-  }
+  Color _getStatusColor(OrderStatus status) =>
+      OrderStatusMapper.getColor(status);
 
   String _truncateText(String text, int maxLength) {
     if (text.length <= maxLength) return text;

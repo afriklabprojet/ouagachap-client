@@ -73,6 +73,8 @@ class PriceCalculated extends OrderState {
   final double distancePrice;
   final double commissionAmount;
   final double courierEarnings;
+  final bool isSurge;
+  final double surgeMultiplier;
 
   const PriceCalculated({
     required this.price,
@@ -81,10 +83,21 @@ class PriceCalculated extends OrderState {
     this.distancePrice = 0,
     this.commissionAmount = 0,
     this.courierEarnings = 0,
+    this.isSurge = false,
+    this.surgeMultiplier = 1.0,
   });
 
   @override
-  List<Object?> get props => [price, distance, basePrice, distancePrice, commissionAmount, courierEarnings];
+  List<Object?> get props => [
+    price,
+    distance,
+    basePrice,
+    distancePrice,
+    commissionAmount,
+    courierEarnings,
+    isSurge,
+    surgeMultiplier,
+  ];
 }
 
 class OrderError extends OrderState {
@@ -102,7 +115,11 @@ class OrderTracking extends OrderState {
   const OrderTracking({required this.order});
 
   @override
-  List<Object?> get props => [order, order.status, order.courier?.currentLatitude];
+  List<Object?> get props => [
+    order,
+    order.status,
+    order.courier?.currentLatitude,
+  ];
 }
 
 class CourierRated extends OrderState {

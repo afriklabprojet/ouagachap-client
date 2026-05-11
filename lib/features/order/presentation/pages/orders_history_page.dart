@@ -3,10 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/status_mapper.dart';
 import '../../../../core/widgets/widgets.dart';
-import '../../../../core/widgets/cards.dart';
-import '../../../../core/widgets/animations.dart';
 import '../../domain/entities/order.dart';
 import '../bloc/order_bloc.dart';
 import '../bloc/order_event.dart';
@@ -22,29 +20,31 @@ class OrdersHistoryPage extends StatefulWidget {
 class _OrdersHistoryPageState extends State<OrdersHistoryPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final _scrollController = ScrollController();
+  // Each tab needs its own ScrollController to avoid shared scroll position
+  late final List<ScrollController> _scrollControllers;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _scrollControllers = List.generate(3, (_) => ScrollController());
+    for (final sc in _scrollControllers) {
+      sc.addListener(() => _onScroll(sc));
+    }
     _loadOrders();
-    
-    _scrollController.addListener(_onScroll);
   }
 
   void _loadOrders() {
     context.read<OrderBloc>().add(const GetOrdersRequested(refresh: true));
   }
 
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
+  void _onScroll(ScrollController sc) {
+    if (sc.position.pixels >= sc.position.maxScrollExtent - 200) {
       final state = context.read<OrderBloc>().state;
       if (state is OrdersLoaded && state.hasMore) {
-        context.read<OrderBloc>().add(GetOrdersRequested(
-              page: state.currentPage + 1,
-            ));
+        context.read<OrderBloc>().add(
+          GetOrdersRequested(page: state.currentPage + 1),
+        );
       }
     }
   }
@@ -52,7 +52,9 @@ class _OrdersHistoryPageState extends State<OrdersHistoryPage>
   @override
   void dispose() {
     _tabController.dispose();
-    _scrollController.dispose();
+    for (final sc in _scrollControllers) {
+      sc.dispose();
+    }
     super.dispose();
   }
 
@@ -63,7 +65,7 @@ class _OrdersHistoryPageState extends State<OrdersHistoryPage>
         title: const Text('Mes commandes'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go(Routes.home),
+          onPressed: () => context.pop(),
         ),
         bottom: TabBar(
           controller: _tabController,
@@ -75,10 +77,17 @@ class _OrdersHistoryPageState extends State<OrdersHistoryPage>
         ),
       ),
       body: BlocBuilder<OrderBloc, OrderState>(
+        buildWhen: (p, c) {
+          if (p is OrdersLoaded && c is OrdersLoaded) {
+            return p.orders != c.orders || p.hasMore != c.hasMore;
+          }
+          return p.runtimeType != c.runtimeType;
+        },
         builder: (context, state) {
           if (state is OrderLoading) {
-            return const AnimatedLoadingWidget(
-              message: 'Chargement des commandes...',
+            return SkeletonLoader(
+              itemCount: 5,
+              itemBuilder: (ctx, _) => const OrderCardSkeleton(),
             );
           }
 
@@ -92,20 +101,25 @@ class _OrdersHistoryPageState extends State<OrdersHistoryPage>
           }
 
           if (state is OrdersLoaded) {
+            final activeOrders = state.orders.where((o) => o.isActive).toList();
+            final doneOrders = state.orders.where((o) => !o.isActive).toList();
             return TabBarView(
               controller: _tabController,
               children: [
                 _buildOrderList(
-                  state.orders.where((o) => o.isActive).toList(),
+                  activeOrders,
                   'Aucune commande en cours',
+                  _scrollControllers[0],
                 ),
                 _buildOrderList(
-                  state.orders.where((o) => !o.isActive).toList(),
+                  doneOrders,
                   'Aucune commande terminée',
+                  _scrollControllers[1],
                 ),
                 _buildOrderList(
                   state.orders,
                   'Aucune commande',
+                  _scrollControllers[2],
                 ),
               ],
             );
@@ -117,7 +131,11 @@ class _OrdersHistoryPageState extends State<OrdersHistoryPage>
     );
   }
 
-  Widget _buildOrderList(List<Order> orders, String emptyMessage) {
+  Widget _buildOrderList(
+    List<Order> orders,
+    String emptyMessage,
+    ScrollController scrollController,
+  ) {
     if (orders.isEmpty) {
       return AnimatedEmptyWidget(
         title: emptyMessage,
@@ -132,13 +150,13 @@ class _OrdersHistoryPageState extends State<OrdersHistoryPage>
         context.read<OrderBloc>().add(const GetOrdersRequested(refresh: true));
       },
       child: ListView.builder(
-        controller: _scrollController,
+        controller: scrollController,
         padding: const EdgeInsets.all(16),
         itemCount: orders.length,
         itemBuilder: (context, index) {
           final order = orders[index];
           return SlideInWidget(
-            delay: Duration(milliseconds: 50 * index),
+            delay: Duration(milliseconds: 50 * (index % 10)),
             beginOffset: const Offset(-0.3, 0),
             child: OrderCard(
               orderNumber: '#${order.trackingNumber.substring(0, 8)}',
@@ -149,7 +167,7 @@ class _OrdersHistoryPageState extends State<OrdersHistoryPage>
               deliveryAddress: order.deliveryAddress,
               amount: '${order.price.toInt()} FCFA',
               onTap: () => context.go('${Routes.orderDetails}/${order.id}'),
-              onTrack: order.isActive 
+              onTrack: order.isActive
                   ? () => context.go('${Routes.orderTracking}/${order.id}')
                   : null,
             ),
@@ -159,160 +177,8 @@ class _OrdersHistoryPageState extends State<OrdersHistoryPage>
     );
   }
 
-  // Conservé pour référence - ancien widget de carte de commande
-  Widget _buildOrderCardOld(Order order) {
-    return GestureDetector(
-      onTap: () => context.go('${Routes.orderDetails}/${order.id}'),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      '#${order.trackingNumber.substring(0, 8)}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    _buildStatusBadge(order.status),
-                  ],
-                ),
-                Text(
-                  '${order.price.toInt()} FCFA',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Addresses
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildAddressRow(
-                        Icons.circle,
-                        AppColors.primary,
-                        order.pickupAddress,
-                      ),
-                      Container(
-                        margin: const EdgeInsets.only(left: 4),
-                        height: 20,
-                        width: 2,
-                        color: Colors.grey[300],
-                      ),
-                      _buildAddressRow(
-                        Icons.location_on,
-                        AppColors.secondary,
-                        order.deliveryAddress,
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.chevron_right, color: Colors.grey),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Footer
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  _formatDate(order.createdAt),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[500],
-                  ),
-                ),
-                if (order.isActive)
-                  TextButton(
-                    onPressed: () =>
-                        context.go('${Routes.orderTracking}/${order.id}'),
-                    child: const Text('Suivre'),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge(OrderStatus status) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: _getStatusColor(status).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        _getStatusLabel(status),
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-          color: _getStatusColor(status),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAddressRow(IconData icon, Color color, String address) {
-    return Row(
-      children: [
-        Icon(icon, size: 10, color: color),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            address,
-            style: const TextStyle(fontSize: 13),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Color _getStatusColor(OrderStatus status) {
-    switch (status) {
-      case OrderStatus.pending:
-        return AppColors.warning;
-      case OrderStatus.accepted:
-        return AppColors.info;
-      case OrderStatus.pickingUp:
-        return AppColors.secondary;
-      case OrderStatus.inTransit:
-        return AppColors.primary;
-      case OrderStatus.delivered:
-        return AppColors.success;
-      case OrderStatus.cancelled:
-        return AppColors.error;
-    }
-  }
+  Color _getStatusColor(OrderStatus status) =>
+      OrderStatusMapper.getColor(status);
 
   String _getStatusLabel(OrderStatus status) {
     switch (status) {

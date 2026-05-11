@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -7,12 +8,16 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/status_mapper.dart';
 import '../../../../core/widgets/animations.dart';
 import '../../../../core/widgets/cards.dart';
 import '../../domain/entities/order.dart';
 import '../bloc/order_bloc.dart';
 import '../bloc/order_event.dart';
 import '../bloc/order_state.dart';
+import '../../../tracking/presentation/bloc/live_tracking_bloc.dart';
+import '../../../tracking/presentation/bloc/live_tracking_event.dart';
+import '../../../tracking/presentation/bloc/live_tracking_state.dart';
 
 class OrderTrackingPage extends StatefulWidget {
   final String orderId;
@@ -23,29 +28,41 @@ class OrderTrackingPage extends StatefulWidget {
   State<OrderTrackingPage> createState() => _OrderTrackingPageState();
 }
 
-class _OrderTrackingPageState extends State<OrderTrackingPage> {
+class _OrderTrackingPageState extends State<OrderTrackingPage>
+    with WidgetsBindingObserver {
   GoogleMapController? _mapController;
-  Timer? _refreshTimer;
+  late LiveTrackingBloc _liveTrackingBloc;
+  LatLng? _courierPosition;
+  int? _etaMinutes;
+  String _trackingCode = '';
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _liveTrackingBloc = context.read<LiveTrackingBloc>();
     _loadOrder();
-    // Refresh toutes les 10 secondes
-    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _liveTrackingBloc.add(const StopTracking());
+    } else if (state == AppLifecycleState.resumed) {
       _loadOrder();
-    });
+    }
   }
 
   void _loadOrder() {
     context.read<OrderBloc>().add(
-          GetOrderDetailsRequested(orderId: widget.orderId),
-        );
+      GetOrderDetailsRequested(orderId: widget.orderId),
+    );
   }
 
   @override
   void dispose() {
-    _refreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    _liveTrackingBloc.add(const StopTracking());
     _mapController?.dispose();
     super.dispose();
   }
@@ -54,42 +71,48 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     final markers = <Marker>{};
 
     // Pickup marker
-    markers.add(Marker(
-      markerId: const MarkerId('pickup'),
-      position: LatLng(order.pickupLatitude, order.pickupLongitude),
-      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
-      infoWindow: InfoWindow(
-        title: 'Récupération',
-        snippet: order.pickupAddress,
+    markers.add(
+      Marker(
+        markerId: const MarkerId('pickup'),
+        position: LatLng(order.pickupLatitude, order.pickupLongitude),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+        infoWindow: InfoWindow(
+          title: 'Récupération',
+          snippet: order.pickupAddress,
+        ),
       ),
-    ));
+    );
 
     // Delivery marker
-    markers.add(Marker(
-      markerId: const MarkerId('delivery'),
-      position: LatLng(order.deliveryLatitude, order.deliveryLongitude),
-      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-      infoWindow: InfoWindow(
-        title: 'Livraison',
-        snippet: order.deliveryAddress,
-      ),
-    ));
-
-    // Courier marker
-    if (order.courier?.currentLatitude != null &&
-        order.courier?.currentLongitude != null) {
-      markers.add(Marker(
-        markerId: const MarkerId('courier'),
-        position: LatLng(
-          order.courier!.currentLatitude!,
-          order.courier!.currentLongitude!,
-        ),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+    markers.add(
+      Marker(
+        markerId: const MarkerId('delivery'),
+        position: LatLng(order.deliveryLatitude, order.deliveryLongitude),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
         infoWindow: InfoWindow(
-          title: 'Coursier',
-          snippet: order.courier!.name,
+          title: 'Livraison',
+          snippet: order.deliveryAddress,
         ),
-      ));
+      ),
+    );
+
+    // Coursier — position temps réel (WS) ou fallback depuis l'API
+    final courierLat =
+        _courierPosition?.latitude ?? order.courier?.currentLatitude;
+    final courierLng =
+        _courierPosition?.longitude ?? order.courier?.currentLongitude;
+    if (courierLat != null && courierLng != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('courier'),
+          position: LatLng(courierLat, courierLng),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+          infoWindow: InfoWindow(
+            title: 'Coursier',
+            snippet: order.courier?.name ?? 'Coursier',
+          ),
+        ),
+      );
     }
 
     return markers;
@@ -105,10 +128,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
         ],
         color: AppColors.primary,
         width: 4,
-        patterns: [
-          PatternItem.dash(20),
-          PatternItem.gap(10),
-        ],
+        patterns: [PatternItem.dash(20), PatternItem.gap(10)],
       ),
     };
   }
@@ -135,9 +155,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
       ),
     );
 
-    _mapController!.animateCamera(
-      CameraUpdate.newLatLngBounds(bounds, 80),
-    );
+    _mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
   }
 
   Future<void> _callCourier(String phone) async {
@@ -149,39 +167,78 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<OrderBloc, OrderState>(
-      builder: (context, state) {
-        if (state is OrderLoading) {
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<LiveTrackingBloc, LiveTrackingState>(
+          listenWhen: (p, c) =>
+              p.courierLatitude != c.courierLatitude ||
+              p.courierLongitude != c.courierLongitude ||
+              p.estimatedMinutes != c.estimatedMinutes,
+          listener: (context, liveState) {
+            if (liveState.hasCourierLocation) {
+              setState(() {
+                _courierPosition = LatLng(
+                  liveState.courierLatitude!,
+                  liveState.courierLongitude!,
+                );
+                _etaMinutes = liveState.estimatedMinutes;
+              });
+            }
+          },
+        ),
+        BlocListener<OrderBloc, OrderState>(
+          listenWhen: (p, c) => c is OrderDetailsLoaded || c is OrderTracking,
+          listener: (context, state) {
+            final order = state is OrderDetailsLoaded
+                ? state.order
+                : state is OrderTracking
+                ? state.order
+                : null;
+            if (order == null) return;
+            final numericId = int.tryParse(widget.orderId) ?? 0;
+            if (numericId > 0) {
+              _trackingCode = order.trackingNumber;
+              _liveTrackingBloc.add(
+                StartTracking(orderId: numericId, trackingCode: _trackingCode),
+              );
+            }
+          },
+        ),
+      ],
+      child: BlocBuilder<OrderBloc, OrderState>(
+        builder: (context, state) {
+          if (state is OrderLoading) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Suivi')),
+              body: const Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          if (state is OrderDetailsLoaded || state is OrderTracking) {
+            final order = state is OrderDetailsLoaded
+                ? state.order
+                : (state as OrderTracking).order;
+            return _buildContent(order);
+          }
+
           return Scaffold(
             appBar: AppBar(title: const Text('Suivi')),
-            body: const Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        if (state is OrderDetailsLoaded || state is OrderTracking) {
-          final order = state is OrderDetailsLoaded
-              ? state.order
-              : (state as OrderTracking).order;
-          return _buildContent(order);
-        }
-
-        return Scaffold(
-          appBar: AppBar(title: const Text('Suivi')),
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('Erreur de chargement'),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: _loadOrder,
-                  child: const Text('Réessayer'),
-                ),
-              ],
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Erreur de chargement'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadOrder,
+                    child: const Text('Réessayer'),
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -227,7 +284,10 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
             child: CircleAvatar(
               backgroundColor: Colors.white,
               child: IconButton(
-                icon: const Icon(Icons.center_focus_strong, color: Colors.black),
+                icon: const Icon(
+                  Icons.center_focus_strong,
+                  color: Colors.black,
+                ),
                 onPressed: () => _fitMapToBounds(order),
               ),
             ),
@@ -279,7 +339,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: _getStatusColor(order.status).withOpacity(0.1),
+                    color: _getStatusColor(order.status).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -303,10 +363,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                       const SizedBox(height: 2),
                       Text(
                         _getStatusDescription(order.status),
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -324,11 +381,12 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                     ),
                     Text(
                       '${order.distance.toStringAsFixed(1)} km',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[500],
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                     ),
+                    if (order.isActive) ...[
+                      const SizedBox(height: 4),
+                      _buildEtaChip(order),
+                    ],
                   ],
                 ),
               ],
@@ -438,8 +496,9 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Annuler la commande'),
-        content:
-            const Text('Êtes-vous sûr de vouloir annuler cette commande ?'),
+        content: const Text(
+          'Êtes-vous sûr de vouloir annuler cette commande ?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -449,8 +508,8 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
             onPressed: () {
               Navigator.pop(context);
               this.context.read<OrderBloc>().add(
-                    CancelOrderRequested(orderId: order.id),
-                  );
+                CancelOrderRequested(orderId: order.id),
+              );
               this.context.go(Routes.home);
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
@@ -461,38 +520,45 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     );
   }
 
-  Color _getStatusColor(OrderStatus status) {
-    switch (status) {
-      case OrderStatus.pending:
-        return AppColors.warning;
-      case OrderStatus.accepted:
-        return AppColors.info;
-      case OrderStatus.pickingUp:
-        return AppColors.secondary;
-      case OrderStatus.inTransit:
-        return AppColors.primary;
-      case OrderStatus.delivered:
-        return AppColors.success;
-      case OrderStatus.cancelled:
-        return AppColors.error;
-    }
+  Color _getStatusColor(OrderStatus status) =>
+      OrderStatusMapper.getColor(status);
+
+  IconData _getStatusIcon(OrderStatus status) =>
+      OrderStatusMapper.getIcon(status);
+
+  Widget _buildEtaChip(Order order) {
+    final eta = _etaMinutes ?? _computeLocalEta(order);
+    if (eta == null) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.access_time, size: 12, color: AppColors.primary),
+          const SizedBox(width: 3),
+          Text(
+            '~$eta min',
+            style: const TextStyle(
+              color: AppColors.primary,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  IconData _getStatusIcon(OrderStatus status) {
-    switch (status) {
-      case OrderStatus.pending:
-        return Icons.schedule;
-      case OrderStatus.accepted:
-        return Icons.check_circle;
-      case OrderStatus.pickingUp:
-        return Icons.inventory;
-      case OrderStatus.inTransit:
-        return Icons.delivery_dining;
-      case OrderStatus.delivered:
-        return Icons.done_all;
-      case OrderStatus.cancelled:
-        return Icons.cancel;
-    }
+  int? _computeLocalEta(Order order) {
+    if (_courierPosition == null) return null;
+    final dlat = _courierPosition!.latitude - order.deliveryLatitude;
+    final dlng = _courierPosition!.longitude - order.deliveryLongitude;
+    final distKm = sqrt(dlat * dlat + dlng * dlng) * 111.0;
+    return max(1, (distKm / 30.0 * 60.0).round());
   }
 
   String _getStatusDescription(OrderStatus status) {

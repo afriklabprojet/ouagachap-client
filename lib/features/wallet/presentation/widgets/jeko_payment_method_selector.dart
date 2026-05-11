@@ -51,15 +51,19 @@ class JekoPaymentMethodSelector extends StatelessWidget {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: methods.map((method) => _buildMethodTile(method)).toList(),
+    return RadioGroup<String>(
+      groupValue: selectedMethod,
+      onChanged: onMethodSelected,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: methods.map((method) => _buildMethodTile(method)).toList(),
+      ),
     );
   }
 
   Widget _buildMethodTile(JekoPaymentMethod method) {
     final isSelected = selectedMethod == method.code;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
@@ -72,24 +76,18 @@ class JekoPaymentMethodSelector extends StatelessWidget {
       ),
       child: RadioListTile<String>(
         value: method.code,
-        groupValue: selectedMethod,
-        onChanged: onMethodSelected,
         title: Row(
           children: [
             _buildMethodIcon(method),
             const SizedBox(width: 12),
             Text(
               method.name,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w500),
             ),
           ],
         ),
-        activeColor: AppColors.primary,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        fillColor: WidgetStateProperty.all(AppColors.primary),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -97,11 +95,11 @@ class JekoPaymentMethodSelector extends StatelessWidget {
   Widget _buildMethodIcon(JekoPaymentMethod method) {
     // Mapping des codes vers des couleurs
     final colorMap = {
-      'wave': const Color(0xFF1DC3E8),
-      'orange': const Color(0xFFFF6600),
-      'mtn': const Color(0xFFFFCC00),
-      'moov': const Color(0xFF0066CC),
-      'djamo': const Color(0xFF6C5CE7),
+      'wave': AppColors.wavePrimary,
+      'orange': AppColors.orangeMoney,
+      'mtn': AppColors.mtnYellow,
+      'moov': AppColors.moovBlue,
+      'djamo': AppColors.djamoPurple,
     };
 
     final color = colorMap[method.code] ?? Colors.grey;
@@ -114,10 +112,7 @@ class JekoPaymentMethodSelector extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
       ),
       child: Center(
-        child: Text(
-          method.icon,
-          style: const TextStyle(fontSize: 22),
-        ),
+        child: Text(method.icon, style: const TextStyle(fontSize: 22)),
       ),
     );
   }
@@ -199,17 +194,14 @@ class _JekoPaymentMethodBottomSheetState
           // Titre
           const Text(
             'Choisir le mode de paiement',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
 
           // Montant
           Text(
             '${widget.amount.toStringAsFixed(0)} ${widget.currency}',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: AppColors.primary,
@@ -246,10 +238,7 @@ class _JekoPaymentMethodBottomSheetState
               ),
               child: const Text(
                 'Confirmer',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ),
           ),

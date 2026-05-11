@@ -51,7 +51,7 @@ class _ChatTabState extends State<ChatTab> {
         if (state.currentChat == null) {
           return _buildChatList(context, state);
         }
-        
+
         // Afficher la conversation en cours
         return _buildChatConversation(context, state);
       },
@@ -105,8 +105,10 @@ class _ChatTabState extends State<ChatTab> {
                       return _ChatListItem(
                         chat: chat,
                         onTap: () {
-                          context.read<SupportBloc>().add(LoadChatMessages(chat.id));
-                          context.read<SupportBloc>().add(OpenChat());
+                          context.read<SupportBloc>().add(
+                            LoadChatMessages(chat.id),
+                          );
+                          context.read<SupportBloc>().add(const OpenChat());
                         },
                       );
                     },
@@ -118,7 +120,7 @@ class _ChatTabState extends State<ChatTab> {
   }
 
   Widget _buildEmptyChats() {
-    return AnimatedEmptyWidget(
+    return const AnimatedEmptyWidget(
       title: 'Aucune conversation',
       subtitle: 'Démarrez une conversation avec\nnotre équipe de support',
     );
@@ -134,7 +136,7 @@ class _ChatTabState extends State<ChatTab> {
             color: Colors.white,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -152,12 +154,16 @@ class _ChatTabState extends State<ChatTab> {
               Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.primary,
                   shape: BoxShape.circle,
                 ),
                 child: const Center(
-                  child: Icon(Icons.support_agent, color: Colors.white, size: 20),
+                  child: Icon(
+                    Icons.support_agent,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -214,30 +220,32 @@ class _ChatTabState extends State<ChatTab> {
         // Messages
         Expanded(
           child: state.chatLoading
-              ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+              ? const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                )
               : state.chatMessages.isEmpty
-                  ? _buildEmptyMessages()
-                  : ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.all(16),
-                      itemCount: state.chatMessages.length,
-                      itemBuilder: (context, index) {
-                        final message = state.chatMessages[index];
-                        final showDate = index == 0 ||
-                            !_isSameDay(
-                              state.chatMessages[index - 1].createdAt,
-                              message.createdAt,
-                            );
-                        
-                        return Column(
-                          children: [
-                            if (showDate)
-                              _DateDivider(date: message.createdAt),
-                            _MessageBubble(message: message),
-                          ],
+              ? _buildEmptyMessages()
+              : ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: state.chatMessages.length,
+                  itemBuilder: (context, index) {
+                    final message = state.chatMessages[index];
+                    final showDate =
+                        index == 0 ||
+                        !_isSameDay(
+                          state.chatMessages[index - 1].createdAt,
+                          message.createdAt,
                         );
-                      },
-                    ),
+
+                    return Column(
+                      children: [
+                        if (showDate) _DateDivider(date: message.createdAt),
+                        _MessageBubble(message: message),
+                      ],
+                    );
+                  },
+                ),
         ),
 
         // Input
@@ -252,22 +260,16 @@ class _ChatTabState extends State<ChatTab> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.waving_hand, size: 48, color: Colors.amber),
+          const Icon(Icons.waving_hand, size: 48, color: Colors.amber),
           const SizedBox(height: 16),
           const Text(
             'Bienvenue !',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Text(
             'Comment pouvons-nous vous aider ?',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           ),
         ],
       ),
@@ -281,7 +283,7 @@ class _ChatTabState extends State<ChatTab> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, -2),
           ),
@@ -312,7 +314,7 @@ class _ChatTabState extends State<ChatTab> {
             ),
             const SizedBox(width: 8),
             Container(
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.primary,
                 shape: BoxShape.circle,
               ),
@@ -333,8 +335,8 @@ class _ChatTabState extends State<ChatTab> {
                         final message = _messageController.text.trim();
                         if (message.isNotEmpty && state.currentChat != null) {
                           context.read<SupportBloc>().add(
-                                SendChatMessage(state.currentChat!.id, message),
-                              );
+                            SendChatMessage(state.currentChat!.id, message),
+                          );
                           _messageController.clear();
                         }
                       },
@@ -364,9 +366,7 @@ class _ChatTabState extends State<ChatTab> {
               Navigator.pop(ctx);
               context.read<SupportBloc>().add(CloseChat(chatId));
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Fermer'),
           ),
         ],
@@ -394,7 +394,7 @@ class _ChatListItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -409,13 +409,10 @@ class _ChatListItem extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.support_agent,
-                color: AppColors.primary,
-              ),
+              child: const Icon(Icons.support_agent, color: AppColors.primary),
             ),
             if (chat.hasUnread)
               Positioned(
@@ -457,19 +454,21 @@ class _ChatListItem extends StatelessWidget {
                 chat.lastMessage!.text,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: Colors.grey[600], fontSize: 13),
               ),
             ],
             const SizedBox(height: 4),
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
-                    color: chat.isOpen ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+                    color: chat.isOpen
+                        ? Colors.green.withValues(alpha: 0.1)
+                        : Colors.grey.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -485,10 +484,7 @@ class _ChatListItem extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     _formatDate(chat.lastMessageAt!),
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                   ),
                 ],
               ],
@@ -503,7 +499,7 @@ class _ChatListItem extends StatelessWidget {
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final diff = now.difference(date);
-    
+
     if (diff.inDays == 0) {
       return DateFormat('HH:mm').format(date);
     } else if (diff.inDays == 1) {
@@ -524,18 +520,20 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMe = !message.isAdmin;
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
             Container(
               width: 28,
               height: 28,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.primary,
                 shape: BoxShape.circle,
               ),
@@ -558,7 +556,7 @@ class _MessageBubble extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -625,7 +623,7 @@ class _DateDivider extends StatelessWidget {
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final diff = now.difference(date);
-    
+
     if (diff.inDays == 0) {
       return "Aujourd'hui";
     } else if (diff.inDays == 1) {

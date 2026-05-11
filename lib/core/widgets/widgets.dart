@@ -1,5 +1,4 @@
-/// Widgets réutilisables de l'application OUAGA CHAP
-library ouaga_chap_widgets;
+// Widgets réutilisables de l'application OUAGA CHAP
 
 // Buttons
 export 'loading_button.dart';

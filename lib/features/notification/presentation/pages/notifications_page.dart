@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/widgets.dart';
-import '../../../../core/widgets/animations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/notification_bloc.dart';
 import '../bloc/notification_event.dart';
 import '../bloc/notification_state.dart';
+import '../../domain/entities/notification.dart' as notif_entity;
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -36,20 +37,22 @@ class _NotificationsPageState extends State<NotificationsPage> {
       body: BlocBuilder<NotificationBloc, NotificationState>(
         builder: (context, state) {
           if (state is NotificationLoading) {
-            return const AnimatedLoadingWidget(
-              message: 'Chargement des notifications...',
+            return AnimatedLoadingWidget(
+              message: context.l10n.loadingNotifications,
             );
           }
-          
+
           if (state is NotificationError) {
             return AnimatedErrorWidget(
               title: 'Erreur',
               subtitle: state.message,
               retryText: 'Réessayer',
-              onRetry: () => context.read<NotificationBloc>().add(const LoadNotifications(refresh: true)),
+              onRetry: () => context.read<NotificationBloc>().add(
+                const LoadNotifications(refresh: true),
+              ),
             );
           }
-          
+
           if (state is NotificationLoaded) {
             if (state.notifications.isEmpty) {
               return const AnimatedEmptyWidget(
@@ -57,10 +60,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 subtitle: 'Vous êtes à jour !',
               );
             }
-            
+
             return RefreshIndicator(
               onRefresh: () async {
-                context.read<NotificationBloc>().add(const LoadNotifications(refresh: true));
+                context.read<NotificationBloc>().add(
+                  const LoadNotifications(refresh: true),
+                );
               },
               child: ListView.separated(
                 itemCount: state.notifications.length,
@@ -83,20 +88,26 @@ class _NotificationsPageState extends State<NotificationsPage> {
               ),
             );
           }
-          
+
           return const SizedBox.shrink();
         },
       ),
     );
   }
 
-  Widget _buildNotificationTile(notification) {
+  Widget _buildNotificationTile(notif_entity.Notification notification) {
     return ListTile(
-      tileColor: notification.isRead ? Colors.transparent : AppColors.primaryLight.withAlpha(25),
+      tileColor: notification.isRead
+          ? Colors.transparent
+          : AppColors.primaryLight.withAlpha(25),
       leading: ScaleInWidget(
         child: CircleAvatar(
           backgroundColor: _getIconColor(notification.type),
-          child: Icon(_getIcon(notification.type), color: Colors.white, size: 20),
+          child: Icon(
+            _getIcon(notification.type),
+            color: Colors.white,
+            size: 20,
+          ),
         ),
       ),
       title: Text(
@@ -116,8 +127,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
           ),
         ],
       ),
-      trailing: notification.isRead 
-          ? null 
+      trailing: notification.isRead
+          ? null
           : Container(
               width: 10,
               height: 10,

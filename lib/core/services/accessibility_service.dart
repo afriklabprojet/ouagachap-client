@@ -39,11 +39,12 @@ class AccessibilityService extends ChangeNotifier {
     if (_initialized) return;
 
     _prefs = await SharedPreferences.getInstance();
-    
+
     _reducedMotion = _prefs?.getBool(_reducedMotionKey) ?? false;
     _largeFont = _prefs?.getBool(_largeFontKey) ?? false;
     _highContrast = _prefs?.getBool(_highContrastKey) ?? false;
-    _screenReaderOptimized = _prefs?.getBool(_screenReaderOptimizedKey) ?? false;
+    _screenReaderOptimized =
+        _prefs?.getBool(_screenReaderOptimizedKey) ?? false;
 
     _initialized = true;
     notifyListeners();
@@ -52,7 +53,7 @@ class AccessibilityService extends ChangeNotifier {
   /// Active/désactive la réduction des mouvements
   Future<void> setReducedMotion(bool value) async {
     if (_reducedMotion == value) return;
-    
+
     _reducedMotion = value;
     await _prefs?.setBool(_reducedMotionKey, value);
     notifyListeners();
@@ -61,7 +62,7 @@ class AccessibilityService extends ChangeNotifier {
   /// Active/désactive les grandes polices
   Future<void> setLargeFont(bool value) async {
     if (_largeFont == value) return;
-    
+
     _largeFont = value;
     await _prefs?.setBool(_largeFontKey, value);
     notifyListeners();
@@ -70,7 +71,7 @@ class AccessibilityService extends ChangeNotifier {
   /// Active/désactive le mode haut contraste
   Future<void> setHighContrast(bool value) async {
     if (_highContrast == value) return;
-    
+
     _highContrast = value;
     await _prefs?.setBool(_highContrastKey, value);
     notifyListeners();
@@ -79,15 +80,21 @@ class AccessibilityService extends ChangeNotifier {
   /// Active/désactive l'optimisation pour lecteur d'écran
   Future<void> setScreenReaderOptimized(bool value) async {
     if (_screenReaderOptimized == value) return;
-    
+
     _screenReaderOptimized = value;
     await _prefs?.setBool(_screenReaderOptimizedKey, value);
     notifyListeners();
   }
 
   /// Annonce un message au lecteur d'écran
-  void announce(String message, {TextDirection textDirection = TextDirection.ltr}) {
-    SemanticsService.announce(message, textDirection);
+  void announce(
+    String message, {
+    TextDirection textDirection = TextDirection.ltr,
+  }) {
+    final views = WidgetsBinding.instance.platformDispatcher.views;
+    if (views.isNotEmpty) {
+      SemanticsService.sendAnnouncement(views.first, message, textDirection);
+    }
   }
 
   /// Génère une description d'accessibilité pour un prix
@@ -232,12 +239,10 @@ class HighContrastColors {
 
 /// Widget qui adapte le contenu selon les paramètres d'accessibilité
 class AdaptiveAccessibilityWidget extends StatelessWidget {
-  final Widget Function(BuildContext context, AccessibilityService service) builder;
+  final Widget Function(BuildContext context, AccessibilityService service)
+  builder;
 
-  const AdaptiveAccessibilityWidget({
-    super.key,
-    required this.builder,
-  });
+  const AdaptiveAccessibilityWidget({super.key, required this.builder});
 
   @override
   Widget build(BuildContext context) {
@@ -248,7 +253,8 @@ class AdaptiveAccessibilityWidget extends StatelessWidget {
 }
 
 // Instance globale (à remplacer par injection de dépendances)
-final AccessibilityService _accessibilityServiceInstance = AccessibilityService();
+final AccessibilityService _accessibilityServiceInstance =
+    AccessibilityService();
 
 /// Getter pour accéder au service d'accessibilité
 AccessibilityService get accessibilityService => _accessibilityServiceInstance;

@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,12 +5,13 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/di/injection.dart';
+import '../../../../core/l10n/app_localizations.dart';
+import '../../../../core/utils/form_validators.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/services/image_compression_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/animations.dart';
 import '../../../../core/widgets/custom_buttons.dart';
-import '../../../../core/widgets/form_fields.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -63,7 +62,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         maxWidth: 1024,
         maxHeight: 1024,
       );
-      
+
       if (pickedFile != null) {
         // Compresser l'image avec notre service
         final compressionService = getIt<ImageCompressionService>();
@@ -73,10 +72,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
           minWidth: 512,
           minHeight: 512,
         );
-        
+
         final compressedFile = XFile(compressedPath ?? pickedFile.path);
         final bytes = await compressedFile.readAsBytes();
-        
+
         setState(() {
           _selectedImage = compressedFile;
           _selectedImageBytes = bytes;
@@ -108,17 +107,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
             children: [
               const Text(
                 'Choisir une photo',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
               ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(Icons.camera_alt, color: AppColors.primary),
@@ -134,7 +130,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 leading: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.purple.withOpacity(0.1),
+                    color: Colors.purple.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(Icons.photo_library, color: Colors.purple),
@@ -151,7 +147,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   leading: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.delete, color: Colors.red),
@@ -177,27 +173,33 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Future<void> _onSave() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
-      
+
       // Écouter le résultat du BLoC avant d'afficher le succès
       final bloc = context.read<AuthBloc>();
-      
+
       // Envoyer l'événement
-      bloc.add(UpdateProfileRequested(
-        name: _nameController.text.trim(),
-        email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
-        avatarFile: _selectedImage,
-        avatarBytes: _selectedImageBytes,
-      ));
-      
+      bloc.add(
+        UpdateProfileRequested(
+          name: _nameController.text.trim(),
+          email: _emailController.text.trim().isEmpty
+              ? null
+              : _emailController.text.trim(),
+          avatarFile: _selectedImage,
+          avatarBytes: _selectedImageBytes,
+        ),
+      );
+
       // Attendre la prochaine émission du BLoC (succès ou erreur)
       try {
-        final resultState = await bloc.stream.firstWhere(
-          (state) => state is AuthAuthenticated || state is AuthError,
-        ).timeout(const Duration(seconds: 15));
-        
+        final resultState = await bloc.stream
+            .firstWhere(
+              (state) => state is AuthAuthenticated || state is AuthError,
+            )
+            .timeout(const Duration(seconds: 15));
+
         if (!mounted) return;
         setState(() => _isLoading = false);
-        
+
         if (resultState is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -219,7 +221,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('La mise à jour a pris trop de temps. Vérifiez votre connexion.'),
+            content: Text(
+              'La mise à jour a pris trop de temps. Vérifiez votre connexion.',
+            ),
             backgroundColor: AppColors.error,
           ),
         );
@@ -238,6 +242,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ),
       ),
       body: BlocBuilder<AuthBloc, AuthState>(
+        buildWhen: (p, c) {
+          if (p is AuthAuthenticated && c is AuthAuthenticated) {
+            return p.user != c.user;
+          }
+          return p.runtimeType != c.runtimeType;
+        },
         builder: (context, state) {
           if (state is! AuthAuthenticated) {
             return const Center(child: CircularProgressIndicator());
@@ -268,13 +278,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                     fit: BoxFit.cover,
                                   )
                                 : _currentAvatarUrl != null
-                                    ? DecorationImage(
-                                        image: NetworkImage(_currentAvatarUrl!),
-                                        fit: BoxFit.cover,
-                                      )
-                                    : null,
+                                ? DecorationImage(
+                                    image: NetworkImage(_currentAvatarUrl!),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
                           ),
-                          child: _selectedImageBytes == null && _currentAvatarUrl == null
+                          child:
+                              _selectedImageBytes == null &&
+                                  _currentAvatarUrl == null
                               ? const Icon(
                                   Icons.person,
                                   size: 50,
@@ -306,26 +318,24 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   const SizedBox(height: 8),
                   Text(
                     'Appuyez pour changer',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
                   ),
                   const SizedBox(height: 32),
                   // Name
                   TextFormField(
                     controller: _nameController,
                     textCapitalization: TextCapitalization.words,
+                    autofillHints: const [AutofillHints.name],
                     decoration: const InputDecoration(
                       labelText: 'Nom complet',
                       prefixIcon: Icon(Icons.person_outline),
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Veuillez entrer votre nom';
+                        return context.l10n.enterYourName;
                       }
                       if (value.trim().length < 3) {
-                        return 'Le nom doit contenir au moins 3 caractères';
+                        return context.l10n.nameMinLength;
                       }
                       return null;
                     },
@@ -344,7 +354,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text(
-                                  'Le numéro de téléphone ne peut pas être modifié'),
+                                'Le numéro de téléphone ne peut pas être modifié',
+                              ),
                             ),
                           );
                         },
@@ -358,20 +369,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
+                    autofillHints: const [AutofillHints.email],
                     decoration: const InputDecoration(
                       labelText: 'Email (optionnel)',
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
-                    validator: (value) {
-                      if (value != null && value.isNotEmpty) {
-                        final emailRegex =
-                            RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                        if (!emailRegex.hasMatch(value)) {
-                          return 'Email invalide';
-                        }
-                      }
-                      return null;
-                    },
+                    validator: FormValidators.email,
                   ),
                   const SizedBox(height: 40),
                   // Save button

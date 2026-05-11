@@ -13,11 +13,13 @@ import '../bloc/auth_state.dart';
 class OtpVerificationPage extends StatefulWidget {
   final String phoneNumber;
   final bool isLogin;
+  final String? confirmationMessage;
 
   const OtpVerificationPage({
     super.key,
     required this.phoneNumber,
     required this.isLogin,
+    this.confirmationMessage,
   });
 
   @override
@@ -34,6 +36,19 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
   void initState() {
     super.initState();
     _startTimer();
+    final msg = widget.confirmationMessage;
+    if (msg != null && msg.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(msg),
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      });
+    }
   }
 
   void _startTimer() {
@@ -46,7 +61,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
         timer.cancel();
         return;
       }
-      
+
       if (_remainingSeconds > 0) {
         _remainingSeconds--;
         // Double vérification de mounted avant setState
@@ -75,20 +90,24 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
   void _onVerify() {
     if (_otpController.text.length == 6) {
-      context.read<AuthBloc>().add(AuthOtpVerificationRequested(
-            phone: widget.phoneNumber,
-            otp: _otpController.text,
-            isNewUser: !widget.isLogin, // true si inscription, false si connexion
-          ));
+      context.read<AuthBloc>().add(
+        AuthOtpVerificationRequested(
+          phone: widget.phoneNumber,
+          otp: _otpController.text,
+          isNewUser: !widget.isLogin, // true si inscription, false si connexion
+        ),
+      );
     }
   }
 
   void _onResendOtp() {
     if (_canResend) {
-      context.read<AuthBloc>().add(AuthResendOtpRequested(
-            phone: widget.phoneNumber,
-            isLogin: widget.isLogin,
-          ));
+      context.read<AuthBloc>().add(
+        AuthResendOtpRequested(
+          phone: widget.phoneNumber,
+          isLogin: widget.isLogin,
+        ),
+      );
       _startTimer();
     }
   }
@@ -107,7 +126,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (!mounted) return;
-        
+
         if (state is AuthSuccess) {
           // Afficher message de bienvenue
           ScaffoldMessenger.of(context).showSnackBar(
@@ -152,115 +171,113 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
           );
         }
       },
-      child: Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.go(Routes.login),
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) context.go(Routes.login);
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => context.go(Routes.login),
+            ),
           ),
-        ),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Title
-                const Text(
-                  'Vérification',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title
+                  const Text(
+                    'Vérification',
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                   ),
-                ),
-                const SizedBox(height: 8),
-                RichText(
-                  text: TextSpan(
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                    children: [
-                      const TextSpan(
-                        text: 'Entrez le code à 6 chiffres envoyé au ',
-                      ),
-                      TextSpan(
-                        text: _formatPhoneNumber(widget.phoneNumber),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                  const SizedBox(height: 8),
+                  RichText(
+                    text: TextSpan(
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      children: [
+                        const TextSpan(
+                          text: 'Entrez le code à 6 chiffres envoyé au ',
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 40),
-                // OTP input
-                PinCodeTextField(
-                  appContext: context,
-                  controller: _otpController,
-                  length: 6,
-                  keyboardType: TextInputType.number,
-                  animationType: AnimationType.fade,
-                  pinTheme: PinTheme(
-                    shape: PinCodeFieldShape.box,
-                    borderRadius: BorderRadius.circular(12),
-                    fieldHeight: 56,
-                    fieldWidth: 48,
-                    activeFillColor: Colors.white,
-                    inactiveFillColor: Colors.grey[100],
-                    selectedFillColor: AppColors.primaryLight,
-                    activeColor: AppColors.primary,
-                    inactiveColor: Colors.grey[300],
-                    selectedColor: AppColors.primary,
-                  ),
-                  enableActiveFill: true,
-                  onCompleted: (value) {
-                    _onVerify();
-                  },
-                  onChanged: (value) {},
-                ),
-                const SizedBox(height: 24),
-                // Demo hint
-                const SizedBox(height: 32),
-                // Verify button
-                BlocBuilder<AuthBloc, AuthState>(
-                  builder: (context, state) {
-                    final isLoading = state is AuthLoading;
-                    return SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: isLoading ? null : _onVerify,
-                        child: isLoading
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text('Vérifier'),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-                // Resend OTP
-                Center(
-                  child: _canResend
-                      ? TextButton(
-                          onPressed: _onResendOtp,
-                          child: const Text('Renvoyer le code'),
-                        )
-                      : Text(
-                          'Renvoyer le code dans ${_remainingSeconds}s',
-                          style: TextStyle(
-                            color: Colors.grey[600],
+                        TextSpan(
+                          text: _formatPhoneNumber(widget.phoneNumber),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
                           ),
                         ),
-                ),
-              ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  // OTP input
+                  PinCodeTextField(
+                    appContext: context,
+                    controller: _otpController,
+                    length: 6,
+                    keyboardType: TextInputType.number,
+                    animationType: AnimationType.fade,
+                    pinTheme: PinTheme(
+                      shape: PinCodeFieldShape.box,
+                      borderRadius: BorderRadius.circular(12),
+                      fieldHeight: 56,
+                      fieldWidth: 48,
+                      activeFillColor: Colors.white,
+                      inactiveFillColor: Colors.grey[100],
+                      selectedFillColor: AppColors.primaryLight,
+                      activeColor: AppColors.primary,
+                      inactiveColor: Colors.grey[300],
+                      selectedColor: AppColors.primary,
+                    ),
+                    enableActiveFill: true,
+                    onCompleted: (value) {
+                      _onVerify();
+                    },
+                    onChanged: (value) {},
+                  ),
+                  const SizedBox(height: 24),
+                  // Demo hint
+                  const SizedBox(height: 32),
+                  // Verify button
+                  BlocBuilder<AuthBloc, AuthState>(
+                    builder: (context, state) {
+                      final isLoading = state is AuthLoading;
+                      return SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: isLoading ? null : _onVerify,
+                          child: isLoading
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text('Vérifier'),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  // Resend OTP
+                  Center(
+                    child: _canResend
+                        ? TextButton(
+                            onPressed: _onResendOtp,
+                            child: const Text('Renvoyer le code'),
+                          )
+                        : Text(
+                            'Renvoyer le code dans ${_remainingSeconds}s',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

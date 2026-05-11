@@ -88,7 +88,7 @@ class EmptyStateWidget extends StatelessWidget {
             customImage ?? Icon(
               icon,
               size: iconSize,
-              color: iconColor ?? AppColors.textTertiary.withOpacity(0.5),
+              color: iconColor ?? AppColors.textTertiary.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 24),
             Text(

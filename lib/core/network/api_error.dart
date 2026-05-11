@@ -38,29 +38,31 @@ class ApiError implements Exception {
       case DioExceptionType.receiveTimeout:
         return ApiError(
           message: 'Délai d\'attente dépassé',
-          details: 'La connexion a pris trop de temps. Vérifiez votre connexion internet.',
+          details:
+              'La connexion a pris trop de temps. Vérifiez votre connexion internet.',
           type: ApiErrorType.timeout,
           originalError: e,
         );
-        
+
       case DioExceptionType.connectionError:
         return ApiError(
           message: 'Erreur de connexion',
-          details: 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.',
+          details:
+              'Impossible de se connecter au serveur. Vérifiez votre connexion internet.',
           type: ApiErrorType.network,
           originalError: e,
         );
-        
+
       case DioExceptionType.cancel:
         return ApiError(
           message: 'Requête annulée',
           type: ApiErrorType.unknown,
           originalError: e,
         );
-        
+
       case DioExceptionType.badResponse:
         return _handleStatusCode(e);
-        
+
       case DioExceptionType.badCertificate:
         return ApiError(
           message: 'Erreur de certificat',
@@ -68,9 +70,8 @@ class ApiError implements Exception {
           type: ApiErrorType.server,
           originalError: e,
         );
-        
+
       case DioExceptionType.unknown:
-      default:
         if (e.error is SocketException) {
           return ApiError(
             message: 'Pas de connexion internet',
@@ -91,14 +92,15 @@ class ApiError implements Exception {
   static ApiError _handleStatusCode(DioException e) {
     final statusCode = e.response?.statusCode;
     final responseData = e.response?.data;
-    
+
     // Extraire le message d'erreur de la réponse API
     String? serverMessage;
     if (responseData is Map) {
-      serverMessage = responseData['message'] as String? 
-          ?? responseData['error'] as String?;
+      serverMessage =
+          responseData['message'] as String? ??
+          responseData['error'] as String?;
     }
-    
+
     switch (statusCode) {
       case 400:
         return ApiError(
@@ -108,7 +110,7 @@ class ApiError implements Exception {
           statusCode: statusCode,
           originalError: e,
         );
-        
+
       case 401:
         return ApiError(
           message: 'Session expirée',
@@ -117,7 +119,7 @@ class ApiError implements Exception {
           statusCode: statusCode,
           originalError: e,
         );
-        
+
       case 403:
         return ApiError(
           message: 'Accès refusé',
@@ -126,7 +128,7 @@ class ApiError implements Exception {
           statusCode: statusCode,
           originalError: e,
         );
-        
+
       case 404:
         return ApiError(
           message: 'Ressource introuvable',
@@ -135,7 +137,7 @@ class ApiError implements Exception {
           statusCode: statusCode,
           originalError: e,
         );
-        
+
       case 422:
         return ApiError(
           message: 'Données invalides',
@@ -144,7 +146,7 @@ class ApiError implements Exception {
           statusCode: statusCode,
           originalError: e,
         );
-        
+
       case 429:
         return ApiError(
           message: 'Trop de requêtes',
@@ -153,19 +155,20 @@ class ApiError implements Exception {
           statusCode: statusCode,
           originalError: e,
         );
-        
+
       case 500:
       case 502:
       case 503:
       case 504:
         return ApiError(
           message: 'Erreur serveur',
-          details: 'Le service est temporairement indisponible. Réessayez plus tard.',
+          details:
+              'Le service est temporairement indisponible. Réessayez plus tard.',
           type: ApiErrorType.server,
           statusCode: statusCode,
           originalError: e,
         );
-        
+
       default:
         return ApiError(
           message: serverMessage ?? 'Une erreur est survenue',
@@ -201,9 +204,9 @@ class ApiError implements Exception {
 
   /// Indique si l'erreur peut être résolue en réessayant
   bool get isRetryable {
-    return type == ApiErrorType.network 
-        || type == ApiErrorType.timeout 
-        || type == ApiErrorType.server;
+    return type == ApiErrorType.network ||
+        type == ApiErrorType.timeout ||
+        type == ApiErrorType.server;
   }
 
   /// Indique si l'utilisateur doit se reconnecter

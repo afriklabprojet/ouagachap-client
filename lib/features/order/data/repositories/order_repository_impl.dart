@@ -65,7 +65,7 @@ class OrderRepositoryImpl implements OrderRepository {
   }
 
   @override
-  Future<Map<String, double>> calculatePrice({
+  Future<Map<String, dynamic>> calculatePrice({
     required double pickupLatitude,
     required double pickupLongitude,
     required double deliveryLatitude,
@@ -101,5 +101,10 @@ class OrderRepositoryImpl implements OrderRepository {
     return Stream.periodic(const Duration(seconds: 5)).asyncMap((_) async {
       return await getOrderDetails(orderId);
     });
+  }
+
+  @override
+  Future<Map<String, dynamic>> getCourierProfile(int courierId) {
+    return remoteDataSource.getCourierProfile(courierId);
   }
 }

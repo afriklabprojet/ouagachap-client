@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
-import '../theme/app_colors.dart';
 
 /// Widget de skeleton loading pour les listes
 class SkeletonLoader extends StatelessWidget {
@@ -27,7 +26,7 @@ class SkeletonLoader extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         shrinkWrap: true,
         itemCount: itemCount,
-        separatorBuilder: (_, __) => SizedBox(height: itemSpacing ?? 16),
+        separatorBuilder: (_, _) => SizedBox(height: itemSpacing ?? 16),
         itemBuilder: itemBuilder,
       ),
     );
@@ -347,16 +346,12 @@ class ShimmerWrapper extends StatelessWidget {
   final Widget child;
   final bool isLoading;
 
-  const ShimmerWrapper({
-    super.key,
-    required this.child,
-    this.isLoading = true,
-  });
+  const ShimmerWrapper({super.key, required this.child, this.isLoading = true});
 
   @override
   Widget build(BuildContext context) {
     if (!isLoading) return child;
-    
+
     return Shimmer.fromColors(
       baseColor: Colors.grey.shade300,
       highlightColor: Colors.grey.shade100,
@@ -444,10 +439,7 @@ class TransactionCardSkeleton extends StatelessWidget {
 class SkeletonTransactionListLoader extends StatelessWidget {
   final int itemCount;
 
-  const SkeletonTransactionListLoader({
-    super.key,
-    this.itemCount = 6,
-  });
+  const SkeletonTransactionListLoader({super.key, this.itemCount = 6});
 
   @override
   Widget build(BuildContext context) {
@@ -458,8 +450,8 @@ class SkeletonTransactionListLoader extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         physics: const NeverScrollableScrollPhysics(),
         itemCount: itemCount,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (_, __) => const TransactionCardSkeleton(),
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (_, _) => const TransactionCardSkeleton(),
       ),
     );
   }

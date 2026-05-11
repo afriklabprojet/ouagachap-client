@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
@@ -32,7 +31,9 @@ class ImageCompressionService {
       // Vérifier la taille originale
       final originalSize = await file.length();
       final originalSizeKB = originalSize / 1024;
-      debugPrint('📸 Taille originale: ${originalSizeKB.toStringAsFixed(2)} KB');
+      debugPrint(
+        '📸 Taille originale: ${originalSizeKB.toStringAsFixed(2)} KB',
+      );
 
       // Si déjà assez petit, retourner l'original
       if (originalSizeKB <= maxFileSizeKB) {
@@ -43,7 +44,8 @@ class ImageCompressionService {
       // Générer le chemin de sortie
       final tempDir = await getTemporaryDirectory();
       final fileName = path.basenameWithoutExtension(filePath);
-      final outputPath = '${tempDir.path}/compressed_${fileName}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final outputPath =
+          '${tempDir.path}/compressed_${fileName}_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
       // Compresser
       final result = await FlutterImageCompress.compressAndGetFile(
@@ -86,7 +88,9 @@ class ImageCompressionService {
   }) async {
     try {
       final originalSizeKB = bytes.length / 1024;
-      debugPrint('📸 Taille originale: ${originalSizeKB.toStringAsFixed(2)} KB');
+      debugPrint(
+        '📸 Taille originale: ${originalSizeKB.toStringAsFixed(2)} KB',
+      );
 
       // Si déjà assez petit, retourner l'original
       if (originalSizeKB <= maxFileSizeKB) {
@@ -105,7 +109,9 @@ class ImageCompressionService {
       final compressedSizeKB = result.length / 1024;
       final reduction = ((bytes.length - result.length) / bytes.length * 100);
 
-      debugPrint('✅ Compression réussie: ${reduction.toStringAsFixed(1)}% de réduction');
+      debugPrint(
+        '✅ Compression réussie: ${reduction.toStringAsFixed(1)}% de réduction',
+      );
       debugPrint('   - Après: ${compressedSizeKB.toStringAsFixed(2)} KB');
 
       return result;
@@ -116,7 +122,7 @@ class ImageCompressionService {
   }
 
   /// Compresse plusieurs images de manière séquentielle.
-  /// 
+  ///
   /// **Pourquoi séquentiel ?** Sur les téléphones low-end (1-2 Go RAM),
   /// compresser en parallèle via `Future.wait()` charge toutes les images
   /// en mémoire simultanément, ce qui provoque un OOM crash.
@@ -126,14 +132,14 @@ class ImageCompressionService {
     int quality = defaultQuality,
   }) async {
     final results = <String>[];
-    
+
     for (final filePath in filePaths) {
       final compressed = await compressImageFile(filePath, quality: quality);
       if (compressed != null) {
         results.add(compressed);
       }
     }
-    
+
     return results;
   }
 
@@ -156,7 +162,7 @@ class ImageCompressionService {
     try {
       final tempDir = await getTemporaryDirectory();
       final files = tempDir.listSync();
-      
+
       int deletedCount = 0;
       for (final file in files) {
         if (file is File && file.path.contains('compressed_')) {
@@ -164,7 +170,7 @@ class ImageCompressionService {
           deletedCount++;
         }
       }
-      
+
       debugPrint('🧹 Nettoyage: $deletedCount fichiers temporaires supprimés');
     } catch (e) {
       debugPrint('❌ Cleanup error: $e');

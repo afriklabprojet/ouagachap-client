@@ -1,14 +1,16 @@
 import 'package:dio/dio.dart';
 
 import '../../../../core/network/api_client.dart';
+import '../../domain/repositories/order_chat_repository.dart';
 import '../models/order_chat_model.dart';
 
-class OrderChatRepository {
+class OrderChatRepository implements OrderChatRepositoryInterface {
   final ApiClient _apiClient;
 
   OrderChatRepository(this._apiClient);
 
   /// Récupérer le chat complet d'une commande (infos + messages)
+  @override
   Future<OrderChat> getOrderChat(String orderUuid) async {
     final response = await _apiClient.get('orders/$orderUuid/chat');
     final data = response.data;
@@ -20,7 +22,11 @@ class OrderChatRepository {
   }
 
   /// Récupérer uniquement les messages (paginés)
-  Future<List<OrderChatMessage>> getMessages(String orderUuid, {int page = 1}) async {
+  @override
+  Future<List<OrderChatMessage>> getMessages(
+    String orderUuid, {
+    int page = 1,
+  }) async {
     final response = await _apiClient.get(
       'orders/$orderUuid/chat/messages',
       queryParameters: {'page': page},
@@ -37,6 +43,7 @@ class OrderChatRepository {
   }
 
   /// Envoyer un message texte
+  @override
   Future<OrderChatMessage> sendMessage(String orderUuid, String message) async {
     final response = await _apiClient.post(
       'orders/$orderUuid/chat/messages',
@@ -51,6 +58,7 @@ class OrderChatRepository {
   }
 
   /// Envoyer une image
+  @override
   Future<OrderChatMessage> sendImage(String orderUuid, String imagePath) async {
     final formData = FormData.fromMap({
       'image': await MultipartFile.fromFile(imagePath),
@@ -69,6 +77,7 @@ class OrderChatRepository {
   }
 
   /// Marquer les messages comme lus
+  @override
   Future<void> markAsRead(String orderUuid) async {
     await _apiClient.post('orders/$orderUuid/chat/read');
   }

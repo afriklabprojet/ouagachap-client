@@ -182,9 +182,9 @@ class _StatusChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         status,
@@ -283,7 +283,7 @@ class WalletCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = gradientColors ?? [
       Theme.of(context).primaryColor,
-      Theme.of(context).primaryColor.withOpacity(0.7),
+      Theme.of(context).primaryColor.withValues(alpha: 0.7),
     ];
     
     return Container(
@@ -297,7 +297,7 @@ class WalletCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: colors.first.withOpacity(0.4),
+            color: colors.first.withValues(alpha: 0.4),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -320,7 +320,7 @@ class WalletCard extends StatelessWidget {
                 ),
                 Icon(
                   Icons.account_balance_wallet,
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                 ),
               ],
             ),
@@ -381,7 +381,7 @@ class _WalletButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white.withOpacity(0.2),
+      color: Colors.white.withValues(alpha: 0.2),
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,

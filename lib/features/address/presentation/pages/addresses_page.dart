@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/animations.dart';
+import '../../../../core/widgets/skeleton_loaders.dart';
 import '../../domain/entities/saved_address.dart';
 import '../bloc/address_bloc.dart';
 import '../bloc/address_event.dart';
@@ -48,7 +49,16 @@ class _AddressesPageState extends State<AddressesPage> {
         },
         builder: (context, state) {
           if (state.status == AddressStatus.loading) {
-            return const Center(child: CircularProgressIndicator());
+            return SkeletonLoader(
+              itemCount: 4,
+              itemBuilder: (ctx, _) => Container(
+                height: 72,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
           }
 
           if (state.addresses.isEmpty) {
@@ -97,7 +107,7 @@ class _AddressesPageState extends State<AddressesPage> {
           children: [
             Container(
               padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.primaryLight,
                 shape: BoxShape.circle,
               ),
@@ -110,19 +120,13 @@ class _AddressesPageState extends State<AddressesPage> {
             const SizedBox(height: 24),
             const Text(
               'Aucune adresse sauvegardée',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               'Ajoutez vos adresses favorites pour passer commande plus rapidement',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -132,7 +136,10 @@ class _AddressesPageState extends State<AddressesPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
               ),
             ),
           ],
@@ -148,7 +155,7 @@ class _AddressesPageState extends State<AddressesPage> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: address.isDefault
-            ? BorderSide(color: AppColors.primary, width: 2)
+            ? const BorderSide(color: AppColors.primary, width: 2)
             : BorderSide.none,
       ),
       child: InkWell(
@@ -163,7 +170,7 @@ class _AddressesPageState extends State<AddressesPage> {
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: _getTypeColor(address.type).withOpacity(0.1),
+                  color: _getTypeColor(address.type).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
@@ -214,10 +221,7 @@ class _AddressesPageState extends State<AddressesPage> {
                     const SizedBox(height: 4),
                     Text(
                       address.address,
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 13,
-                      ),
+                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -225,10 +229,7 @@ class _AddressesPageState extends State<AddressesPage> {
                       const SizedBox(height: 4),
                       Text(
                         '${address.contactName}${address.contactPhone != null ? ' • ${address.contactPhone}' : ''}',
-                        style: TextStyle(
-                          color: Colors.grey[500],
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: Colors.grey[500], fontSize: 12),
                       ),
                     ],
                   ],
@@ -295,7 +296,7 @@ class _AddressesPageState extends State<AddressesPage> {
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.star, color: AppColors.primary),
@@ -303,7 +304,9 @@ class _AddressesPageState extends State<AddressesPage> {
                   title: const Text('Définir par défaut'),
                   onTap: () {
                     Navigator.pop(context);
-                    context.read<AddressBloc>().add(SetDefaultAddress(address.id));
+                    context.read<AddressBloc>().add(
+                      SetDefaultAddress(address.id),
+                    );
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Adresse définie par défaut'),
@@ -316,7 +319,7 @@ class _AddressesPageState extends State<AddressesPage> {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: Colors.blue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.edit, color: Colors.blue),
@@ -331,12 +334,15 @@ class _AddressesPageState extends State<AddressesPage> {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.delete, color: Colors.red),
                 ),
-                title: const Text('Supprimer', style: TextStyle(color: Colors.red)),
+                title: const Text(
+                  'Supprimer',
+                  style: TextStyle(color: Colors.red),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _confirmDelete(address);
@@ -387,9 +393,15 @@ class _AddressesPageState extends State<AddressesPage> {
     final isEditing = address != null;
     final labelController = TextEditingController(text: address?.label);
     final addressController = TextEditingController(text: address?.address);
-    final contactNameController = TextEditingController(text: address?.contactName);
-    final contactPhoneController = TextEditingController(text: address?.contactPhone);
-    final instructionsController = TextEditingController(text: address?.instructions);
+    final contactNameController = TextEditingController(
+      text: address?.contactName,
+    );
+    final contactPhoneController = TextEditingController(
+      text: address?.contactPhone,
+    );
+    final instructionsController = TextEditingController(
+      text: address?.instructions,
+    );
     String selectedType = address?.type.name ?? 'other';
     bool isDefault = address?.isDefault ?? false;
 
@@ -435,7 +447,10 @@ class _AddressesPageState extends State<AddressesPage> {
                   const SizedBox(height: 20),
 
                   // Type selector
-                  const Text('Type d\'adresse', style: TextStyle(fontWeight: FontWeight.w500)),
+                  const Text(
+                    'Type d\'adresse',
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -474,19 +489,23 @@ class _AddressesPageState extends State<AddressesPage> {
                       hintText: 'Ex: Quartier Patte d\'oie, Secteur 15',
                       prefixIcon: const Icon(Icons.location_on_outlined),
                       suffixIcon: IconButton(
-                        icon: const Icon(Icons.map_outlined, color: AppColors.primary),
+                        icon: const Icon(
+                          Icons.map_outlined,
+                          color: AppColors.primary,
+                        ),
                         tooltip: 'Choisir sur la carte',
                         onPressed: () async {
-                          final result = await Navigator.push<Map<String, dynamic>>(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => MapPickerPage(
-                                initialLatitude: latitude,
-                                initialLongitude: longitude,
-                                title: 'Choisir l\'adresse',
-                              ),
-                            ),
-                          );
+                          final result =
+                              await Navigator.push<Map<String, dynamic>>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => MapPickerPage(
+                                    initialLatitude: latitude,
+                                    initialLongitude: longitude,
+                                    title: 'Choisir l\'adresse',
+                                  ),
+                                ),
+                              );
                           if (result != null) {
                             setSheetState(() {
                               latitude = result['latitude'];
@@ -594,8 +613,10 @@ class _AddressesPageState extends State<AddressesPage> {
                                   if (labelController.text.isEmpty ||
                                       addressController.text.isEmpty) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Veuillez remplir les champs obligatoires'),
+                                      SnackBar(
+                                        content: Text(
+                                          context.l10n.fillRequiredFields,
+                                        ),
                                         backgroundColor: AppColors.error,
                                       ),
                                     );
@@ -603,50 +624,62 @@ class _AddressesPageState extends State<AddressesPage> {
                                   }
 
                                   if (isEditing) {
-                                    context.read<AddressBloc>().add(UpdateAddress(
-                                          id: address!.id,
-                                          label: labelController.text,
-                                          address: addressController.text,
-                                          latitude: latitude,
-                                          longitude: longitude,
-                                          contactName: contactNameController.text.isEmpty
-                                              ? null
-                                              : contactNameController.text,
-                                          contactPhone: contactPhoneController.text.isEmpty
-                                              ? null
-                                              : '+226${contactPhoneController.text}',
-                                          instructions: instructionsController.text.isEmpty
-                                              ? null
-                                              : instructionsController.text,
-                                          isDefault: isDefault,
-                                          type: selectedType,
-                                        ));
+                                    context.read<AddressBloc>().add(
+                                      UpdateAddress(
+                                        id: address.id,
+                                        label: labelController.text,
+                                        address: addressController.text,
+                                        latitude: latitude,
+                                        longitude: longitude,
+                                        contactName:
+                                            contactNameController.text.isEmpty
+                                            ? null
+                                            : contactNameController.text,
+                                        contactPhone:
+                                            contactPhoneController.text.isEmpty
+                                            ? null
+                                            : '+226${contactPhoneController.text}',
+                                        instructions:
+                                            instructionsController.text.isEmpty
+                                            ? null
+                                            : instructionsController.text,
+                                        isDefault: isDefault,
+                                        type: selectedType,
+                                      ),
+                                    );
                                   } else {
-                                    context.read<AddressBloc>().add(CreateAddress(
-                                          label: labelController.text,
-                                          address: addressController.text,
-                                          latitude: latitude,
-                                          longitude: longitude,
-                                          contactName: contactNameController.text.isEmpty
-                                              ? null
-                                              : contactNameController.text,
-                                          contactPhone: contactPhoneController.text.isEmpty
-                                              ? null
-                                              : '+226${contactPhoneController.text}',
-                                          instructions: instructionsController.text.isEmpty
-                                              ? null
-                                              : instructionsController.text,
-                                          isDefault: isDefault,
-                                          type: selectedType,
-                                        ));
+                                    context.read<AddressBloc>().add(
+                                      CreateAddress(
+                                        label: labelController.text,
+                                        address: addressController.text,
+                                        latitude: latitude,
+                                        longitude: longitude,
+                                        contactName:
+                                            contactNameController.text.isEmpty
+                                            ? null
+                                            : contactNameController.text,
+                                        contactPhone:
+                                            contactPhoneController.text.isEmpty
+                                            ? null
+                                            : '+226${contactPhoneController.text}',
+                                        instructions:
+                                            instructionsController.text.isEmpty
+                                            ? null
+                                            : instructionsController.text,
+                                        isDefault: isDefault,
+                                        type: selectedType,
+                                      ),
+                                    );
                                   }
 
                                   Navigator.pop(context);
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text(isEditing
-                                          ? 'Adresse mise à jour'
-                                          : 'Adresse ajoutée'),
+                                      content: Text(
+                                        isEditing
+                                            ? 'Adresse mise à jour'
+                                            : 'Adresse ajoutée',
+                                      ),
                                       backgroundColor: AppColors.success,
                                     ),
                                   );
@@ -665,7 +698,9 @@ class _AddressesPageState extends State<AddressesPage> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : Text(isEditing ? 'Mettre à jour' : 'Enregistrer'),
+                              : Text(
+                                  isEditing ? 'Mettre à jour' : 'Enregistrer',
+                                ),
                         ),
                       );
                     },

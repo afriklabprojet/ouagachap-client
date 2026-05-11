@@ -37,7 +37,9 @@ class _IncomingOrdersPageState extends State<IncomingOrdersPage> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              context.read<IncomingOrderBloc>().add(const RefreshIncomingOrders());
+              context.read<IncomingOrderBloc>().add(
+                const RefreshIncomingOrders(),
+              );
             },
           ),
         ],
@@ -57,11 +59,11 @@ class _IncomingOrdersPageState extends State<IncomingOrdersPage> {
           if (state is IncomingOrderLoading) {
             return const Center(child: CircularProgressIndicator());
           }
-          
+
           if (state is IncomingOrderLoaded) {
             return _buildContent(state);
           }
-          
+
           return _buildEmptyState();
         },
       ),
@@ -76,20 +78,14 @@ class _IncomingOrdersPageState extends State<IncomingOrdersPage> {
       child: CustomScrollView(
         slivers: [
           // Stats cards
-          SliverToBoxAdapter(
-            child: _buildStatsCards(state.stats),
-          ),
-          
+          SliverToBoxAdapter(child: _buildStatsCards(state.stats)),
+
           // Filters
-          SliverToBoxAdapter(
-            child: _buildFilters(state.activeFilter),
-          ),
-          
+          SliverToBoxAdapter(child: _buildFilters(state.activeFilter)),
+
           // Orders list
           if (state.orders.isEmpty)
-            SliverFillRemaining(
-              child: _buildEmptyState(),
-            )
+            SliverFillRemaining(child: _buildEmptyState())
           else
             SliverPadding(
               padding: const EdgeInsets.all(16),
@@ -161,13 +157,7 @@ class _IncomingOrdersPageState extends State<IncomingOrdersPage> {
               color: color,
             ),
           ),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey[600],
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
         ],
       ),
     );
@@ -192,7 +182,7 @@ class _IncomingOrdersPageState extends State<IncomingOrdersPage> {
         itemBuilder: (context, index) {
           final filter = filters[index];
           final isActive = activeFilter == filter['value'];
-          
+
           return FilterChip(
             label: Text(filter['label']!),
             selected: isActive,
@@ -235,13 +225,17 @@ class _IncomingOrdersPageState extends State<IncomingOrdersPage> {
                   _buildStatusBadge(order.status, order.statusLabel),
                 ],
               ),
-              
+
               const Divider(height: 20),
-              
+
               // Expéditeur
               Row(
                 children: [
-                  const Icon(Icons.person_outline, size: 18, color: Colors.grey),
+                  const Icon(
+                    Icons.person_outline,
+                    size: 18,
+                    color: Colors.grey,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'De: ${order.senderName}',
@@ -249,13 +243,17 @@ class _IncomingOrdersPageState extends State<IncomingOrdersPage> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               // Adresse
               Row(
                 children: [
-                  const Icon(Icons.location_on_outlined, size: 18, color: AppColors.primary),
+                  const Icon(
+                    Icons.location_on_outlined,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -267,12 +265,16 @@ class _IncomingOrdersPageState extends State<IncomingOrdersPage> {
                   ),
                 ],
               ),
-              
+
               if (order.packageDescription != null) ...[
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(Icons.inventory_2_outlined, size: 18, color: Colors.grey),
+                    const Icon(
+                      Icons.inventory_2_outlined,
+                      size: 18,
+                      color: Colors.grey,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -285,9 +287,9 @@ class _IncomingOrdersPageState extends State<IncomingOrdersPage> {
                   ],
                 ),
               ],
-              
+
               const SizedBox(height: 12),
-              
+
               // Actions
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -357,11 +359,7 @@ class _IncomingOrdersPageState extends State<IncomingOrdersPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.inbox_outlined,
-            size: 80,
-            color: Colors.grey[300],
-          ),
+          Icon(Icons.inbox_outlined, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 16),
           Text(
             'Aucun colis à recevoir',
@@ -375,10 +373,7 @@ class _IncomingOrdersPageState extends State<IncomingOrdersPage> {
           Text(
             'Quand quelqu\'un vous enverra un colis,\nil apparaîtra ici.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
           ),
         ],
       ),
@@ -388,7 +383,7 @@ class _IncomingOrdersPageState extends State<IncomingOrdersPage> {
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final diff = now.difference(date);
-    
+
     if (diff.inMinutes < 60) {
       return 'Il y a ${diff.inMinutes} min';
     } else if (diff.inHours < 24) {
@@ -401,284 +396,16 @@ class _IncomingOrdersPageState extends State<IncomingOrdersPage> {
   }
 
   void _openOrderDetails(IncomingOrder order) {
-    // TODO: Navigate to order details page
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => _OrderDetailsSheet(order: order),
+    context.pushNamed(
+      Routes.orderDetails,
+      pathParameters: {'orderId': order.id},
     );
   }
 
   void _openTracking(IncomingOrder order) {
-    // TODO: Navigate to tracking page
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Tracking en cours de développement')),
+    context.pushNamed(
+      Routes.liveTracking,
+      pathParameters: {'orderId': order.id},
     );
-  }
-}
-
-/// Bottom sheet pour les détails d'un colis
-class _OrderDetailsSheet extends StatelessWidget {
-  final IncomingOrder order;
-
-  const _OrderDetailsSheet({required this.order});
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      maxChildSize: 0.9,
-      minChildSize: 0.5,
-      expand: false,
-      builder: (context, scrollController) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: ListView(
-            controller: scrollController,
-            children: [
-              // Handle bar
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 20),
-              
-              // Title
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    order.orderNumber,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  _buildStatusBadge(order.status, order.statusLabel),
-                ],
-              ),
-              
-              const SizedBox(height: 24),
-              
-              // Expéditeur
-              _buildInfoSection(
-                icon: Icons.person_outline,
-                title: 'Expéditeur',
-                value: order.senderName,
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Adresse de livraison
-              _buildInfoSection(
-                icon: Icons.location_on_outlined,
-                title: 'Adresse de livraison',
-                value: order.dropoffAddress,
-              ),
-              
-              if (order.packageDescription != null) ...[
-                const SizedBox(height: 16),
-                _buildInfoSection(
-                  icon: Icons.inventory_2_outlined,
-                  title: 'Description du colis',
-                  value: order.packageDescription!,
-                ),
-              ],
-              
-              if (order.courier != null) ...[
-                const Divider(height: 32),
-                _buildCourierSection(order.courier!),
-              ],
-              
-              if (order.confirmationCode != null && !order.recipientConfirmed) ...[
-                const SizedBox(height: 24),
-                _buildConfirmationSection(context),
-              ],
-              
-              const SizedBox(height: 24),
-              
-              // Date
-              Text(
-                'Créé le ${_formatFullDate(order.createdAt)}',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildStatusBadge(String status, String label) {
-    Color color;
-    switch (status) {
-      case 'pending':
-        color = AppColors.warning;
-        break;
-      case 'accepted':
-      case 'picked_up':
-        color = AppColors.info;
-        break;
-      case 'delivered':
-        color = AppColors.success;
-        break;
-      case 'cancelled':
-        color = AppColors.error;
-        break;
-      default:
-        color = Colors.grey;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontWeight: FontWeight.w600,
-          color: color,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoSection({
-    required IconData icon,
-    required String title,
-    required String value,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: AppColors.primary, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCourierSection(IncomingOrderCourier courier) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.info.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: AppColors.info,
-            child: const Icon(Icons.delivery_dining, color: Colors.white),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Votre coursier',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-                Text(
-                  courier.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                if (courier.vehicleType != null)
-                  Text(
-                    courier.vehicleType!,
-                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-                  ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () {
-              // TODO: Appeler le coursier
-            },
-            icon: const Icon(Icons.phone, color: AppColors.info),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildConfirmationSection(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.success.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        children: [
-          const Icon(Icons.qr_code, size: 40, color: AppColors.success),
-          const SizedBox(height: 8),
-          const Text(
-            'Code de confirmation',
-            style: TextStyle(fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            order.confirmationCode!,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 4,
-              color: AppColors.success,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Montrez ce code au coursier à la livraison',
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatFullDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} à ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 }

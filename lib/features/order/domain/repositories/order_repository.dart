@@ -32,7 +32,7 @@ abstract class OrderRepository {
   Future<void> cancelOrder(String orderId, {String? reason});
 
   /// Calculer le prix estimé via l'API serveur (zones + commission)
-  Future<Map<String, double>> calculatePrice({
+  Future<Map<String, dynamic>> calculatePrice({
     required double pickupLatitude,
     required double pickupLongitude,
     required double deliveryLatitude,
@@ -49,4 +49,7 @@ abstract class OrderRepository {
 
   /// Suivre une commande en temps réel
   Stream<Order> trackOrder(String orderId);
+
+  /// Récupérer le profil public d'un coursier
+  Future<Map<String, dynamic>> getCourierProfile(int courierId);
 }

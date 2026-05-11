@@ -20,7 +20,7 @@ class AppTextField extends StatelessWidget {
   final FormFieldValidator<String>? validator;
   final FocusNode? focusNode;
   final AutovalidateMode? autovalidateMode;
-  
+
   const AppTextField({
     super.key,
     this.label,
@@ -42,7 +42,7 @@ class AppTextField extends StatelessWidget {
     this.focusNode,
     this.autovalidateMode,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -51,10 +51,7 @@ class AppTextField extends StatelessWidget {
         if (label != null) ...[
           Text(
             label!,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
           ),
           const SizedBox(height: 8),
         ],
@@ -125,7 +122,7 @@ class PasswordField extends StatefulWidget {
   final TextInputAction? textInputAction;
   final FormFieldValidator<String>? validator;
   final ValueChanged<String>? onChanged;
-  
+
   const PasswordField({
     super.key,
     this.label,
@@ -135,14 +132,14 @@ class PasswordField extends StatefulWidget {
     this.validator,
     this.onChanged,
   });
-  
+
   @override
   State<PasswordField> createState() => _PasswordFieldState();
 }
 
 class _PasswordFieldState extends State<PasswordField> {
   bool _obscureText = true;
-  
+
   @override
   Widget build(BuildContext context) {
     return AppTextField(
@@ -156,7 +153,9 @@ class _PasswordFieldState extends State<PasswordField> {
       prefixIcon: const Icon(Icons.lock_outline),
       suffixIcon: IconButton(
         icon: Icon(
-          _obscureText ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+          _obscureText
+              ? Icons.visibility_outlined
+              : Icons.visibility_off_outlined,
         ),
         onPressed: () {
           setState(() => _obscureText = !_obscureText);
@@ -173,7 +172,7 @@ class PhoneField extends StatelessWidget {
   final TextEditingController? controller;
   final FormFieldValidator<String>? validator;
   final ValueChanged<String>? onChanged;
-  
+
   const PhoneField({
     super.key,
     this.label,
@@ -182,7 +181,7 @@ class PhoneField extends StatelessWidget {
     this.validator,
     this.onChanged,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return AppTextField(
@@ -196,17 +195,12 @@ class PhoneField extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12),
         margin: const EdgeInsets.only(right: 8),
         decoration: BoxDecoration(
-          border: Border(
-            right: BorderSide(color: Colors.grey.shade300),
-          ),
+          border: Border(right: BorderSide(color: Colors.grey.shade300)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              '🇧🇫',
-              style: const TextStyle(fontSize: 20),
-            ),
+            const Text('🇧🇫', style: TextStyle(fontSize: 20)),
             const SizedBox(width: 4),
             Text(
               countryCode,
@@ -226,7 +220,7 @@ class SearchField extends StatelessWidget {
   final ValueChanged<String>? onChanged;
   final VoidCallback? onClear;
   final VoidCallback? onSubmitted;
-  
+
   const SearchField({
     super.key,
     this.hint,
@@ -235,7 +229,7 @@ class SearchField extends StatelessWidget {
     this.onClear,
     this.onSubmitted,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return TextField(
@@ -279,7 +273,7 @@ class SelectField<T> extends StatelessWidget {
   final ValueChanged<T?>? onChanged;
   final FormFieldValidator<T>? validator;
   final Widget? prefixIcon;
-  
+
   const SelectField({
     super.key,
     this.label,
@@ -290,7 +284,7 @@ class SelectField<T> extends StatelessWidget {
     this.validator,
     this.prefixIcon,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -299,15 +293,12 @@ class SelectField<T> extends StatelessWidget {
         if (label != null) ...[
           Text(
             label!,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
           ),
           const SizedBox(height: 8),
         ],
         DropdownButtonFormField<T>(
-          value: value,
+          initialValue: value,
           items: items,
           onChanged: onChanged,
           validator: validator,
@@ -351,7 +342,7 @@ class AddressField extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onCurrentLocation;
   final FormFieldValidator<String>? validator;
-  
+
   const AddressField({
     super.key,
     this.label,
@@ -361,7 +352,7 @@ class AddressField extends StatelessWidget {
     this.onCurrentLocation,
     this.validator,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return AppTextField(
@@ -387,13 +378,9 @@ class AddressField extends StatelessWidget {
 class FormFieldGroup extends StatelessWidget {
   final List<Widget> children;
   final double spacing;
-  
-  const FormFieldGroup({
-    super.key,
-    required this.children,
-    this.spacing = 16,
-  });
-  
+
+  const FormFieldGroup({super.key, required this.children, this.spacing = 16});
+
   @override
   Widget build(BuildContext context) {
     return Column(

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,36 +12,37 @@ class OrderChatPage extends StatefulWidget {
   final String orderUuid;
   final String? courierName;
 
-  const OrderChatPage({
-    super.key,
-    required this.orderUuid,
-    this.courierName,
-  });
+  const OrderChatPage({super.key, required this.orderUuid, this.courierName});
 
   @override
   State<OrderChatPage> createState() => _OrderChatPageState();
 }
 
-class _OrderChatPageState extends State<OrderChatPage> {
+class _OrderChatPageState extends State<OrderChatPage>
+    with WidgetsBindingObserver {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   final _focusNode = FocusNode();
-  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     context.read<OrderChatBloc>().add(LoadOrderChat(widget.orderUuid));
+  }
 
-    // Rafraîchir toutes les 5 secondes pour les nouveaux messages
-    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Au retour en premier plan, rafraîchir une fois pour rattraper les
+    // messages éventuellement manqués pendant l'inactivité (WS déconnecté).
+    if (state == AppLifecycleState.resumed) {
       context.read<OrderChatBloc>().add(const RefreshChat());
-    });
+    }
   }
 
   @override
   void dispose() {
-    _refreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     _messageController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
@@ -91,12 +91,9 @@ class _OrderChatPageState extends State<OrderChatPage> {
             child: BlocConsumer<OrderChatBloc, OrderChatState>(
               listener: (context, state) {
                 if (state is OrderChatReady) {
-                  Future.delayed(
-                    const Duration(milliseconds: 100),
-                    () {
-                      if (mounted) _scrollToBottom();
-                    },
-                  );
+                  Future.delayed(const Duration(milliseconds: 100), () {
+                    if (mounted) _scrollToBottom();
+                  });
                 }
               },
               builder: (context, state) {
@@ -131,6 +128,11 @@ class _OrderChatPageState extends State<OrderChatPage> {
     return AppBar(
       elevation: 1,
       title: BlocBuilder<OrderChatBloc, OrderChatState>(
+        buildWhen: (p, c) {
+          final pName = p is OrderChatReady ? p.chat.courierName : null;
+          final cName = c is OrderChatReady ? c.chat.courierName : null;
+          return pName != cName;
+        },
         builder: (context, state) {
           String name = widget.courierName ?? 'Coursier';
           String? phone;
@@ -168,10 +170,7 @@ class _OrderChatPageState extends State<OrderChatPage> {
                     if (phone != null)
                       Text(
                         phone,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                   ],
                 ),
@@ -183,6 +182,11 @@ class _OrderChatPageState extends State<OrderChatPage> {
       actions: [
         // Bouton d'appel
         BlocBuilder<OrderChatBloc, OrderChatState>(
+          buildWhen: (p, c) {
+            final pPhone = p is OrderChatReady ? p.chat.courierPhone : null;
+            final cPhone = c is OrderChatReady ? c.chat.courierPhone : null;
+            return pPhone != cPhone;
+          },
           builder: (context, state) {
             if (state is OrderChatReady && state.chat.courierPhone != null) {
               return IconButton(
@@ -206,7 +210,8 @@ class _OrderChatPageState extends State<OrderChatPage> {
       itemBuilder: (context, index) {
         final msg = messages[index];
         final isMe = !msg.isCourier; // Client = pas coursier
-        final showDate = index == 0 ||
+        final showDate =
+            index == 0 ||
             !_isSameDay(messages[index - 1].createdAt, msg.createdAt);
 
         return Column(
@@ -284,7 +289,8 @@ class _OrderChatPageState extends State<OrderChatPage> {
                   imageUrl: msg.imageUrl!,
                   width: 200,
                   fit: BoxFit.cover,
-                  memCacheWidth: 400, // 2x pour Retina, évite OOM sur gros fichiers
+                  memCacheWidth:
+                      400, // 2x pour Retina, évite OOM sur gros fichiers
                   placeholder: (context, url) => Container(
                     width: 200,
                     height: 100,
@@ -347,6 +353,11 @@ class _OrderChatPageState extends State<OrderChatPage> {
 
   Widget _buildInputField() {
     return BlocBuilder<OrderChatBloc, OrderChatState>(
+      buildWhen: (p, c) {
+        final pSending = p is OrderChatReady && p.isSending;
+        final cSending = c is OrderChatReady && c.isSending;
+        return pSending != cSending;
+      },
       builder: (context, state) {
         final isSending = state is OrderChatReady && state.isSending;
 
@@ -397,7 +408,7 @@ class _OrderChatPageState extends State<OrderChatPage> {
               ),
               const SizedBox(width: 8),
               Container(
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.primary,
                   shape: BoxShape.circle,
                 ),
@@ -461,9 +472,9 @@ class _OrderChatPageState extends State<OrderChatPage> {
           ),
           const SizedBox(height: 16),
           ElevatedButton.icon(
-            onPressed: () => context
-                .read<OrderChatBloc>()
-                .add(LoadOrderChat(widget.orderUuid)),
+            onPressed: () => context.read<OrderChatBloc>().add(
+              LoadOrderChat(widget.orderUuid),
+            ),
             icon: const Icon(Icons.refresh),
             label: const Text('Réessayer'),
           ),

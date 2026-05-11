@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/di/injection.dart';
+import '../../../../core/services/app_config_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/widgets/animations.dart';
@@ -25,13 +27,25 @@ class _RechargePageState extends State<RechargePage> {
   int _selectedAmount = 0;
   String _selectedPaymentMethod = '';
 
-  final List<int> _amounts = [500, 1000, 2000, 5000, 10000, 20000];
+  List<int> _amounts = [];
 
   @override
   void initState() {
     super.initState();
+    // Charger les montants depuis la config backend
+    _loadRechargeAmounts();
     // Charger les méthodes de paiement JEKO
     context.read<JekoPaymentBloc>().add(LoadPaymentMethods());
+  }
+
+  Future<void> _loadRechargeAmounts() async {
+    final configService = getIt<AppConfigService>();
+    await configService.getConfig();
+    if (mounted) {
+      setState(() {
+        _amounts = configService.cachedRechargeAmounts;
+      });
+    }
   }
 
   @override
@@ -39,19 +53,11 @@ class _RechargePageState extends State<RechargePage> {
     return BlocListener<JekoPaymentBloc, JekoPaymentState>(
       listener: (context, state) {
         // Gérer les états de paiement JEKO
-        if (state.status == JekoPaymentStatus.paymentInitiated && 
+        if (state.status == JekoPaymentStatus.paymentInitiated &&
             state.paymentResult != null) {
           final result = state.paymentResult!;
           if (result.success && result.redirectUrl != null) {
-            // Ouvrir l'URL de paiement JEKO
-            _launchPaymentUrl(result.redirectUrl!);
-            // Afficher un message
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Redirection vers JEKO pour le paiement...'),
-                backgroundColor: AppColors.primary,
-              ),
-            );
+            _showRedirectWarning(context, result.redirectUrl!);
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -61,15 +67,7 @@ class _RechargePageState extends State<RechargePage> {
             );
           }
         } else if (state.status == JekoPaymentStatus.success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Recharge effectuée avec succès !'),
-              backgroundColor: AppColors.success,
-            ),
-          );
-          // Rafraîchir le wallet
-          context.read<WalletBloc>().add(const LoadWallet());
-          context.pop();
+          _showSuccessConfirmation(context, state);
         } else if (state.status == JekoPaymentStatus.error) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -99,10 +97,7 @@ class _RechargePageState extends State<RechargePage> {
               // Amount Selection
               const Text(
                 'Choisir un montant',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               _buildAmountGrid(),
@@ -111,10 +106,7 @@ class _RechargePageState extends State<RechargePage> {
               // Payment Provider (JEKO)
               const Text(
                 'Mode de paiement',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               _buildJekoPaymentMethods(),
@@ -124,6 +116,111 @@ class _RechargePageState extends State<RechargePage> {
               _buildRechargeButton(),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showRedirectWarning(BuildContext context, String url) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.open_in_browser, color: AppColors.primary),
+            SizedBox(width: 10),
+            Text('Redirection vers JEKO'),
+          ],
+        ),
+        content: const Text(
+          'Votre navigateur va s\'ouvrir pour finaliser le paiement.\n\n'
+          'Une fois le paiement effectué, revenez sur l\'application. '
+          'Votre solde sera mis à jour automatiquement.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text(
+              'Continuer',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await _launchPaymentUrl(url);
+    }
+  }
+
+  void _showSuccessConfirmation(BuildContext context, JekoPaymentState state) {
+    // Rafraîchir le wallet en arrière-plan
+    context.read<WalletBloc>().add(const LoadWallet());
+
+    final amount = state.paymentResult?.amount;
+    final amountText = amount != null
+        ? formatCFA(amount.toInt())
+        : 'votre montant';
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                color: AppColors.success,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check, color: Colors.white, size: 40),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Recharge réussie !',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '$amountText ont été ajoutés à votre compte.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  if (context.mounted) context.pop();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.success,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Voir mon solde',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -147,6 +244,11 @@ class _RechargePageState extends State<RechargePage> {
 
   Widget _buildBalanceCard() {
     return BlocBuilder<WalletBloc, WalletState>(
+      buildWhen: (p, c) {
+        final pBal = p is WalletLoaded ? p.wallet.balance : -1;
+        final cBal = c is WalletLoaded ? c.wallet.balance : -1;
+        return pBal != cBal || p.runtimeType != c.runtimeType;
+      },
       builder: (context, state) {
         int balance = 0;
         if (state is WalletLoaded) {
@@ -157,7 +259,10 @@ class _RechargePageState extends State<RechargePage> {
           child: WalletCard(
             balance: balance.toDouble(),
             currency: 'FCFA',
-            gradientColors: const [Color(0xFF1A1A2E), Color(0xFF16213E)],
+            gradientColors: const [
+              AppColors.walletBannerDark,
+              AppColors.walletBannerDarker,
+            ],
           ),
         );
       },
@@ -209,6 +314,8 @@ class _RechargePageState extends State<RechargePage> {
   /// Méthodes de paiement JEKO depuis l'API
   Widget _buildJekoPaymentMethods() {
     return BlocBuilder<JekoPaymentBloc, JekoPaymentState>(
+      buildWhen: (p, c) =>
+          p.status != c.status || p.paymentMethods != c.paymentMethods,
       builder: (context, state) {
         if (state.status == JekoPaymentStatus.loadingMethods) {
           return const Center(
@@ -244,7 +351,7 @@ class _RechargePageState extends State<RechargePage> {
         width: (MediaQuery.of(context).size.width - 72) / 2,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : Colors.white,
+          color: isSelected ? color.withValues(alpha: 0.1) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? color : Colors.grey[300]!,
@@ -253,7 +360,7 @@ class _RechargePageState extends State<RechargePage> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: color.withOpacity(0.2),
+                    color: color.withValues(alpha: 0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -265,13 +372,10 @@ class _RechargePageState extends State<RechargePage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
+                color: color.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
-              child: Text(
-                method.icon,
-                style: const TextStyle(fontSize: 24),
-              ),
+              child: Text(method.icon, style: const TextStyle(fontSize: 24)),
             ),
             const SizedBox(height: 10),
             Text(
@@ -302,11 +406,13 @@ class _RechargePageState extends State<RechargePage> {
       spacing: 12,
       runSpacing: 12,
       children: fallbackMethods.map((method) {
-        return _buildJekoPaymentCard(JekoPaymentMethod(
-          code: method['code']!,
-          name: method['name']!,
-          icon: method['icon']!,
-        ));
+        return _buildJekoPaymentCard(
+          JekoPaymentMethod(
+            code: method['code']!,
+            name: method['name']!,
+            icon: method['icon']!,
+          ),
+        );
       }).toList(),
     );
   }
@@ -314,15 +420,15 @@ class _RechargePageState extends State<RechargePage> {
   Color _getMethodColor(String code) {
     switch (code.toLowerCase()) {
       case 'wave':
-        return const Color(0xFF1DC6FF);
+        return AppColors.waveLight;
       case 'orange':
         return Colors.orange;
       case 'mtn':
-        return const Color(0xFFFFCC00);
+        return AppColors.mtnYellow;
       case 'moov':
         return Colors.blue;
       case 'djamo':
-        return const Color(0xFF7B61FF);
+        return AppColors.djamoLight;
       default:
         return AppColors.primary;
     }
@@ -330,9 +436,11 @@ class _RechargePageState extends State<RechargePage> {
 
   Widget _buildRechargeButton() {
     return BlocBuilder<JekoPaymentBloc, JekoPaymentState>(
+      buildWhen: (p, c) => p.status != c.status,
       builder: (context, state) {
         final isLoading = state.status == JekoPaymentStatus.initiatingPayment;
-        final isValid = _selectedAmount > 0 && _selectedPaymentMethod.isNotEmpty;
+        final isValid =
+            _selectedAmount > 0 && _selectedPaymentMethod.isNotEmpty;
 
         return SizedBox(
           width: double.infinity,
@@ -377,9 +485,11 @@ class _RechargePageState extends State<RechargePage> {
   }
 
   void _onRecharge() {
-    context.read<JekoPaymentBloc>().add(InitiateWalletRecharge(
-      amount: _selectedAmount.toDouble(),
-      paymentMethod: _selectedPaymentMethod,
-    ));
+    context.read<JekoPaymentBloc>().add(
+      InitiateWalletRecharge(
+        amount: _selectedAmount.toDouble(),
+        paymentMethod: _selectedPaymentMethod,
+      ),
+    );
   }
 }

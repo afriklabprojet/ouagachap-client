@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/di/injection.dart';
 import '../../../../core/services/accessibility_service.dart';
+import '../../../../core/services/theme_service.dart';
 import '../../../../core/theme/app_colors.dart';
 
 /// Page des paramètres d'accessibilité
@@ -8,22 +10,27 @@ class AccessibilitySettingsPage extends StatefulWidget {
   const AccessibilitySettingsPage({super.key});
 
   @override
-  State<AccessibilitySettingsPage> createState() => _AccessibilitySettingsPageState();
+  State<AccessibilitySettingsPage> createState() =>
+      _AccessibilitySettingsPageState();
 }
 
 class _AccessibilitySettingsPageState extends State<AccessibilitySettingsPage> {
   late AccessibilityService _accessibilityService;
+  late ThemeService _themeService;
 
   @override
   void initState() {
     super.initState();
     _accessibilityService = accessibilityService;
     _accessibilityService.addListener(_onServiceChanged);
+    _themeService = getIt<ThemeService>();
+    _themeService.addListener(_onServiceChanged);
   }
 
   @override
   void dispose() {
     _accessibilityService.removeListener(_onServiceChanged);
+    _themeService.removeListener(_onServiceChanged);
     super.dispose();
   }
 
@@ -34,10 +41,7 @@ class _AccessibilitySettingsPageState extends State<AccessibilitySettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Accessibilité'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Accessibilité'), centerTitle: true),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -47,12 +51,12 @@ class _AccessibilitySettingsPageState extends State<AccessibilitySettingsPage> {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.accessibility_new_rounded,
                     color: AppColors.primary,
                     size: 32,
@@ -70,10 +74,16 @@ class _AccessibilitySettingsPageState extends State<AccessibilitySettingsPage> {
           ),
           const SizedBox(height: 24),
 
+          // Section Thème
+          _buildSectionHeader(context, 'Thème'),
+          const SizedBox(height: 8),
+          _buildThemeTile(context),
+          const SizedBox(height: 24),
+
           // Section Affichage
           _buildSectionHeader(context, 'Affichage'),
           const SizedBox(height: 8),
-          
+
           _buildSettingTile(
             context,
             icon: Icons.text_fields_rounded,
@@ -87,7 +97,8 @@ class _AccessibilitySettingsPageState extends State<AccessibilitySettingsPage> {
             context,
             icon: Icons.contrast_rounded,
             title: 'Contraste élevé',
-            subtitle: 'Améliore la lisibilité avec des couleurs plus contrastées',
+            subtitle:
+                'Améliore la lisibilité avec des couleurs plus contrastées',
             value: _accessibilityService.highContrast,
             onChanged: (value) => _accessibilityService.setHighContrast(value),
           ),
@@ -119,7 +130,8 @@ class _AccessibilitySettingsPageState extends State<AccessibilitySettingsPage> {
             title: 'Optimisation lecteur d\'écran',
             subtitle: 'Améliore les descriptions vocales des éléments',
             value: _accessibilityService.screenReaderOptimized,
-            onChanged: (value) => _accessibilityService.setScreenReaderOptimized(value),
+            onChanged: (value) =>
+                _accessibilityService.setScreenReaderOptimized(value),
           ),
 
           const SizedBox(height: 32),
@@ -145,8 +157,8 @@ class _AccessibilitySettingsPageState extends State<AccessibilitySettingsPage> {
                     Text(
                       'À propos',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -155,8 +167,8 @@ class _AccessibilitySettingsPageState extends State<AccessibilitySettingsPage> {
                   'Ces paramètres sont sauvegardés automatiquement et s\'appliquent immédiatement. '
                   'Vous pouvez également utiliser les options d\'accessibilité de votre appareil pour une expérience personnalisée.',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Semantics(
@@ -167,7 +179,9 @@ class _AccessibilitySettingsPageState extends State<AccessibilitySettingsPage> {
                       // Ouvrir les paramètres système d'accessibilité
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Ouvrir Paramètres > Accessibilité sur votre appareil'),
+                          content: Text(
+                            'Ouvrir Paramètres > Accessibilité sur votre appareil',
+                          ),
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
@@ -184,15 +198,109 @@ class _AccessibilitySettingsPageState extends State<AccessibilitySettingsPage> {
     );
   }
 
+  Widget _buildThemeTile(BuildContext context) {
+    final current = _themeService.isDarkMode
+        ? 'Sombre'
+        : _themeService.isLightMode
+        ? 'Clair'
+        : 'Automatique';
+    return Semantics(
+      label: "Apparence de l'application. Thème actuellement : $current",
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.brightness_6_rounded,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Apparence',
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        Text(
+                          'Clair, sombre ou selon le système',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: SegmentedButton<ThemeMode>(
+                  segments: const [
+                    ButtonSegment(
+                      value: ThemeMode.light,
+                      icon: Icon(Icons.light_mode_rounded),
+                      label: Text('Clair'),
+                    ),
+                    ButtonSegment(
+                      value: ThemeMode.system,
+                      icon: Icon(Icons.brightness_auto_rounded),
+                      label: Text('Auto'),
+                    ),
+                    ButtonSegment(
+                      value: ThemeMode.dark,
+                      icon: Icon(Icons.dark_mode_rounded),
+                      label: Text('Sombre'),
+                    ),
+                  ],
+                  selected: {_themeService.themeMode},
+                  onSelectionChanged: (modes) =>
+                      _themeService.setThemeMode(modes.first),
+                  style: ButtonStyle(
+                    foregroundColor: WidgetStateProperty.resolveWith((states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return AppColors.primary;
+                      }
+                      return null;
+                    }),
+                    iconColor: WidgetStateProperty.resolveWith((states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return AppColors.primary;
+                      }
+                      return null;
+                    }),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSectionHeader(BuildContext context, String title) {
     return Semantics(
       header: true,
       child: Text(
         title,
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.primary,
-            ),
+          fontWeight: FontWeight.bold,
+          color: AppColors.primary,
+        ),
       ),
     );
   }
@@ -215,20 +323,22 @@ class _AccessibilitySettingsPageState extends State<AccessibilitySettingsPage> {
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: value
-                  ? AppColors.primary.withOpacity(0.1)
+                  ? AppColors.primary.withValues(alpha: 0.1)
                   : Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
-              color: value ? AppColors.primary : Theme.of(context).colorScheme.outline,
+              color: value
+                  ? AppColors.primary
+                  : Theme.of(context).colorScheme.outline,
             ),
           ),
           title: Text(
             title,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
           ),
           subtitle: Text(
             subtitle,
@@ -237,7 +347,7 @@ class _AccessibilitySettingsPageState extends State<AccessibilitySettingsPage> {
           trailing: Switch.adaptive(
             value: value,
             onChanged: onChanged,
-            activeColor: AppColors.primary,
+            activeThumbColor: AppColors.primary,
           ),
           onTap: () => onChanged(!value),
         ),

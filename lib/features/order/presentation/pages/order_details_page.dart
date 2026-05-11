@@ -8,13 +8,12 @@ import '../../../../core/router/app_router.dart';
 import '../../../../core/services/app_review_service.dart';
 import '../../../../core/services/deep_link_service.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/status_mapper.dart';
 import '../../../../core/widgets/animations.dart';
-import '../../../../core/widgets/custom_buttons.dart';
 import '../../domain/entities/order.dart';
 import '../bloc/order_bloc.dart';
 import '../bloc/order_event.dart';
 import '../bloc/order_state.dart';
-import '../widgets/rating_dialog.dart';
 
 class OrderDetailsPage extends StatefulWidget {
   final String orderId;
@@ -34,8 +33,8 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
   void _loadOrderDetails() {
     context.read<OrderBloc>().add(
-          GetOrderDetailsRequested(orderId: widget.orderId),
-        );
+      GetOrderDetailsRequested(orderId: widget.orderId),
+    );
   }
 
   Future<void> _callNumber(String phone) async {
@@ -64,7 +63,9 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Annuler la commande'),
-        content: const Text('Êtes-vous sûr de vouloir annuler cette commande ?'),
+        content: const Text(
+          'Êtes-vous sûr de vouloir annuler cette commande ?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -74,8 +75,8 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
             onPressed: () {
               Navigator.pop(context);
               context.read<OrderBloc>().add(
-                    CancelOrderRequested(orderId: order.id),
-                  );
+                CancelOrderRequested(orderId: order.id),
+              );
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Oui, annuler'),
@@ -85,32 +86,17 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     );
   }
 
-  void _showRatingDialog(Order order) {
-    if (order.courier == null) return;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => RatingDialog(
-        courierName: order.courier!.name,
-        onSubmit: (rating, review, tags) async {
-          Navigator.pop(dialogContext);
-          context.read<OrderBloc>().add(
-                RateCourierRequested(
-                  orderId: order.id,
-                  rating: rating,
-                  review: review,
-                  tags: tags,
-                ),
-              );
-        },
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<OrderBloc, OrderState>(
+      listenWhen: (p, c) =>
+          c is OrderCancelled || c is CourierRated || c is OrderError,
+      buildWhen: (p, c) {
+        if (p is OrderDetailsLoaded && c is OrderDetailsLoaded) {
+          return p.order != c.order;
+        }
+        return p.runtimeType != c.runtimeType;
+      },
       listener: (context, state) {
         if (state is OrderCancelled) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -192,57 +178,37 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
             ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Status card
-            FadeInWidget(
-              delay: const Duration(milliseconds: 100),
-              child: _buildStatusCard(order),
-            ),
-            const SizedBox(height: 20),
-            // Timeline
-            SlideInWidget(
-              delay: const Duration(milliseconds: 200),
-              child: _buildTimeline(order),
-            ),
-            const SizedBox(height: 20),
-            // Addresses
-            SlideInWidget(
-              delay: const Duration(milliseconds: 300),
-              child: _buildAddressCard(order),
-            ),
-            const SizedBox(height: 20),
-            // Courier info
-            if (order.courier != null) ...[
-              ScaleInWidget(
-                delay: const Duration(milliseconds: 400),
-                child: _buildCourierCard(order.courier!),
-              ),
+      body: FadeInWidget(
+        duration: const Duration(milliseconds: 300),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Status card
+              _buildStatusCard(order),
               const SizedBox(height: 20),
+              // Timeline
+              _buildTimeline(order),
+              const SizedBox(height: 20),
+              // Addresses
+              _buildAddressCard(order),
+              const SizedBox(height: 20),
+              // Courier info
+              if (order.courier != null) ...[
+                _buildCourierCard(order.courier!),
+                const SizedBox(height: 20),
+              ],
+              // Price
+              _buildPriceCard(order),
+              const SizedBox(height: 20),
+              // Live Tracking Button
+              if (order.canTrack) _buildLiveTrackingButton(order),
+              if (order.canTrack) const SizedBox(height: 12),
+              // Actions
+              if (order.canCancel) _buildCancelButton(order),
             ],
-            // Price
-            FadeInWidget(
-              delay: const Duration(milliseconds: 500),
-              child: _buildPriceCard(order),
-            ),
-            const SizedBox(height: 20),
-            // Live Tracking Button
-            if (order.canTrack)
-              FadeInWidget(
-                delay: const Duration(milliseconds: 550),
-                child: _buildLiveTrackingButton(order),
-              ),
-            if (order.canTrack) const SizedBox(height: 12),
-            // Actions
-            if (order.canCancel) 
-              FadeInWidget(
-                delay: const Duration(milliseconds: 600),
-                child: _buildCancelButton(order),
-              ),
-          ],
+          ),
         ),
       ),
     );
@@ -252,10 +218,10 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _getStatusColor(order.status).withOpacity(0.1),
+        color: _getStatusColor(order.status).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: _getStatusColor(order.status).withOpacity(0.3),
+          color: _getStatusColor(order.status).withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -289,10 +255,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                 const SizedBox(height: 4),
                 Text(
                   _getStatusDescription(order.status),
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
                 ),
               ],
             ),
@@ -331,18 +294,9 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
               true,
             ),
           if (order.pickedUpAt != null)
-            _buildTimelineItem(
-              'Colis récupéré',
-              order.pickedUpAt!,
-              true,
-            ),
+            _buildTimelineItem('Colis récupéré', order.pickedUpAt!, true),
           if (order.deliveredAt != null)
-            _buildTimelineItem(
-              'Livré',
-              order.deliveredAt!,
-              true,
-              isLast: true,
-            ),
+            _buildTimelineItem('Livré', order.deliveredAt!, true, isLast: true),
           if (order.cancelledAt != null)
             _buildTimelineItem(
               'Annulée',
@@ -376,8 +330,8 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                 color: isCancelled
                     ? AppColors.error
                     : isCompleted
-                        ? AppColors.success
-                        : Colors.grey[300],
+                    ? AppColors.success
+                    : Colors.grey[300],
                 shape: BoxShape.circle,
               ),
               child: isCompleted
@@ -464,7 +418,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: color, size: 20),
@@ -511,13 +465,10 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: AppColors.secondary.withOpacity(0.1),
+              color: AppColors.secondary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
-              Icons.person,
-              color: AppColors.secondary,
-            ),
+            child: const Icon(Icons.person, color: AppColors.secondary),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -544,7 +495,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
             onPressed: () => _callNumber(courier.phone),
             icon: const Icon(Icons.phone, color: AppColors.secondary),
             style: IconButton.styleFrom(
-              backgroundColor: AppColors.secondary.withOpacity(0.1),
+              backgroundColor: AppColors.secondary.withValues(alpha: 0.1),
             ),
           ),
         ],
@@ -565,10 +516,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Montant total',
-                style: TextStyle(fontSize: 12),
-              ),
+              const Text('Montant total', style: TextStyle(fontSize: 12)),
               const SizedBox(height: 4),
               Text(
                 '${order.price.toInt()} FCFA',
@@ -582,9 +530,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
           ),
           Text(
             '${order.distance.toStringAsFixed(1)} km',
-            style: TextStyle(
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(color: Colors.grey[600]),
           ),
         ],
       ),
@@ -601,23 +547,6 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
           side: const BorderSide(color: AppColors.error),
         ),
         child: const Text('Annuler la commande'),
-      ),
-    );
-  }
-
-  Widget _buildRatingButton(Order order) {
-    if (!order.canRate) return const SizedBox.shrink();
-
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: () => _showRatingDialog(order),
-        icon: const Icon(Icons.star),
-        label: const Text('Noter le coursier'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-        ),
       ),
     );
   }
@@ -645,91 +574,11 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     );
   }
 
-  Widget _buildRatingDisplay(Order order) {
-    if (order.courierRating == null) return const SizedBox.shrink();
+  Color _getStatusColor(OrderStatus status) =>
+      OrderStatusMapper.getColor(status);
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.green.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.green.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.green, size: 20),
-              const SizedBox(width: 8),
-              const Text(
-                'Votre évaluation',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: List.generate(
-              5,
-              (index) => Icon(
-                index < order.courierRating! ? Icons.star : Icons.star_border,
-                color: Colors.amber,
-                size: 24,
-              ),
-            ),
-          ),
-          if (order.courierReview != null && order.courierReview!.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(
-              order.courierReview!,
-              style: TextStyle(
-                color: Colors.grey[700],
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Color _getStatusColor(OrderStatus status) {
-    switch (status) {
-      case OrderStatus.pending:
-        return AppColors.warning;
-      case OrderStatus.accepted:
-        return AppColors.info;
-      case OrderStatus.pickingUp:
-        return AppColors.secondary;
-      case OrderStatus.inTransit:
-        return AppColors.primary;
-      case OrderStatus.delivered:
-        return AppColors.success;
-      case OrderStatus.cancelled:
-        return AppColors.error;
-    }
-  }
-
-  IconData _getStatusIcon(OrderStatus status) {
-    switch (status) {
-      case OrderStatus.pending:
-        return Icons.schedule;
-      case OrderStatus.accepted:
-        return Icons.check_circle;
-      case OrderStatus.pickingUp:
-        return Icons.inventory;
-      case OrderStatus.inTransit:
-        return Icons.delivery_dining;
-      case OrderStatus.delivered:
-        return Icons.done_all;
-      case OrderStatus.cancelled:
-        return Icons.cancel;
-    }
-  }
+  IconData _getStatusIcon(OrderStatus status) =>
+      OrderStatusMapper.getIcon(status);
 
   String _getStatusDescription(OrderStatus status) {
     switch (status) {

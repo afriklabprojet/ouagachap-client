@@ -5,7 +5,7 @@ class CalculatePriceUseCase {
 
   CalculatePriceUseCase(this._repository);
 
-  Future<Map<String, double>> call({
+  Future<Map<String, dynamic>> call({
     required double pickupLatitude,
     required double pickupLongitude,
     required double deliveryLatitude,

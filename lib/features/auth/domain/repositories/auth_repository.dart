@@ -1,3 +1,7 @@
+import 'dart:typed_data';
+
+import 'package:image_picker/image_picker.dart';
+
 import '../entities/user.dart';
 
 abstract class AuthRepository {
@@ -31,9 +35,16 @@ abstract class AuthRepository {
   Future<User> updateProfile({
     String? name,
     String? email,
-    String? avatar,
+    XFile? avatarFile,
+    Uint8List? avatarBytes,
   });
+
+  /// Enregistrer le token FCM sur le serveur après connexion
+  Future<void> registerFcmToken();
 
   /// Récupérer le token d'authentification
   Future<String?> getToken();
+
+  /// Rafraîchit le token d'authentification
+  Future<String> refreshToken();
 }

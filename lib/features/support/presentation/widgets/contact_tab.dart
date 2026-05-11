@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/lottie_animations.dart';
-import '../../domain/entities/contact_info.dart';
 import '../bloc/support_bloc.dart';
 import '../bloc/support_event.dart';
 import '../bloc/support_state.dart';
@@ -14,8 +13,11 @@ class ContactTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SupportBloc, SupportState>(
+      buildWhen: (p, c) =>
+          p.status != c.status || p.contactInfo != c.contactInfo,
       builder: (context, state) {
-        if (state.status == SupportStatus.loading && state.contactInfo == null) {
+        if (state.status == SupportStatus.loading &&
+            state.contactInfo == null) {
           return const AnimatedLoadingWidget(
             message: 'Chargement des contacts...',
           );
@@ -52,7 +54,7 @@ class ContactTab extends StatelessWidget {
                     gradient: LinearGradient(
                       colors: [
                         AppColors.primary,
-                        AppColors.primary.withOpacity(0.8),
+                        AppColors.primary.withValues(alpha: 0.8),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -64,7 +66,7 @@ class ContactTab extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -87,7 +89,7 @@ class ContactTab extends StatelessWidget {
                         'Notre équipe est là pour vous aider',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                         ),
                       ),
                     ],
@@ -99,10 +101,7 @@ class ContactTab extends StatelessWidget {
                 // Contact Options
                 const Text(
                   'Contactez-nous',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
 
@@ -121,7 +120,11 @@ class ContactTab extends StatelessWidget {
                   title: 'WhatsApp',
                   subtitle: contact.phoneDisplay,
                   description: 'Discutez avec nous sur WhatsApp',
-                  onTap: () => _launchWhatsApp(context, contact.whatsapp, contact.whatsappMessage),
+                  onTap: () => _launchWhatsApp(
+                    context,
+                    contact.whatsapp,
+                    contact.whatsappMessage,
+                  ),
                 ),
 
                 _ContactCard(
@@ -138,10 +141,7 @@ class ContactTab extends StatelessWidget {
                 // Working Hours
                 const Text(
                   'Horaires d\'ouverture',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
 
@@ -152,7 +152,7 @@ class ContactTab extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -163,7 +163,7 @@ class ContactTab extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.purple.withOpacity(0.1),
+                          color: Colors.purple.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
@@ -204,10 +204,7 @@ class ContactTab extends StatelessWidget {
                 // Address
                 const Text(
                   'Adresse',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
 
@@ -218,7 +215,7 @@ class ContactTab extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -229,7 +226,7 @@ class ContactTab extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.1),
+                          color: Colors.red.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
@@ -270,10 +267,7 @@ class ContactTab extends StatelessWidget {
                 // Social Media
                 const Text(
                   'Suivez-nous',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
 
@@ -281,19 +275,20 @@ class ContactTab extends StatelessWidget {
                   children: [
                     _SocialButton(
                       icon: Icons.facebook,
-                      color: const Color(0xFF1877F2),
+                      color: AppColors.facebookBlue,
                       onTap: () => _launchUrl(context, contact.social.facebook),
                     ),
                     const SizedBox(width: 12),
                     _SocialButton(
                       icon: Icons.camera_alt,
-                      color: const Color(0xFFE4405F),
-                      onTap: () => _launchUrl(context, contact.social.instagram),
+                      color: AppColors.instagramPink,
+                      onTap: () =>
+                          _launchUrl(context, contact.social.instagram),
                     ),
                     const SizedBox(width: 12),
                     _SocialButton(
                       icon: Icons.alternate_email,
-                      color: const Color(0xFF1DA1F2),
+                      color: AppColors.twitterBlue,
                       onTap: () => _launchUrl(context, contact.social.twitter),
                     ),
                   ],
@@ -309,8 +304,8 @@ class ContactTab extends StatelessWidget {
   }
 
   Future<void> _launchPhone(BuildContext context, String phone) async {
-    final uri = Uri.parse('tel:$phone');
-    if (await canLaunchUrl(uri)) {
+    final uri = Uri.tryParse('tel:$phone');
+    if (uri != null && await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
       if (context.mounted) {
@@ -321,12 +316,16 @@ class ContactTab extends StatelessWidget {
     }
   }
 
-  Future<void> _launchWhatsApp(BuildContext context, String phone, String message) async {
+  Future<void> _launchWhatsApp(
+    BuildContext context,
+    String phone,
+    String message,
+  ) async {
     final encodedMessage = Uri.encodeComponent(message);
     final cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
-    final uri = Uri.parse('https://wa.me/$cleanPhone?text=$encodedMessage');
-    
-    if (await canLaunchUrl(uri)) {
+    final uri = Uri.tryParse('https://wa.me/$cleanPhone?text=$encodedMessage');
+
+    if (uri != null && await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
       if (context.mounted) {
@@ -338,8 +337,8 @@ class ContactTab extends StatelessWidget {
   }
 
   Future<void> _launchEmail(BuildContext context, String email) async {
-    final uri = Uri.parse('mailto:$email?subject=Support OUAGA CHAP');
-    if (await canLaunchUrl(uri)) {
+    final uri = Uri.tryParse('mailto:$email?subject=Support OUAGA CHAP');
+    if (uri != null && await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
       if (context.mounted) {
@@ -351,14 +350,14 @@ class ContactTab extends StatelessWidget {
   }
 
   Future<void> _launchUrl(BuildContext context, String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
+    final uri = Uri.tryParse(url);
+    if (uri != null && await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Impossible d\'ouvrir $url')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Impossible d\'ouvrir $url')));
       }
     }
   }
@@ -390,7 +389,7 @@ class _ContactCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -408,14 +407,10 @@ class _ContactCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: iconColor.withOpacity(0.1),
+                    color: iconColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    icon,
-                    color: iconColor,
-                    size: 24,
-                  ),
+                  child: Icon(icon, color: iconColor, size: 24),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -441,10 +436,7 @@ class _ContactCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         description,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -484,14 +476,10 @@ class _SocialButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(
-            icon,
-            color: color,
-            size: 28,
-          ),
+          child: Icon(icon, color: color, size: 28),
         ),
       ),
     );

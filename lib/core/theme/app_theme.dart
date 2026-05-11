@@ -11,7 +11,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      colorScheme: ColorScheme.light(
+      colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         onPrimary: AppColors.textOnPrimary,
         secondary: AppColors.secondary,
@@ -163,7 +163,7 @@ class AppTheme {
       // Chip Theme
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surfaceVariant,
-        selectedColor: AppColors.primaryLight.withOpacity(0.2),
+        selectedColor: AppColors.primaryLight.withValues(alpha: 0.2),
         labelStyle: const TextStyle(
           color: AppColors.textPrimary,
           fontSize: 14,
@@ -291,7 +291,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      colorScheme: ColorScheme.dark(
+      colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
         onPrimary: AppColors.textOnPrimary,
         secondary: AppColors.secondary,
@@ -607,7 +607,7 @@ class AppTheme {
       ),
       
       // Tab Bar Theme Dark
-      tabBarTheme: TabBarThemeData(
+      tabBarTheme: const TabBarThemeData(
         labelColor: AppColors.primary,
         unselectedLabelColor: AppColors.darkTextTertiary,
         indicatorColor: AppColors.primary,

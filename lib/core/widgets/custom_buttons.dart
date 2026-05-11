@@ -14,7 +14,7 @@ class PrimaryButton extends StatefulWidget {
   final double height;
   final Color? backgroundColor;
   final Color? textColor;
-  
+
   const PrimaryButton({
     super.key,
     required this.text,
@@ -27,7 +27,7 @@ class PrimaryButton extends StatefulWidget {
     this.backgroundColor,
     this.textColor,
   });
-  
+
   @override
   State<PrimaryButton> createState() => _PrimaryButtonState();
 }
@@ -36,7 +36,7 @@ class _PrimaryButtonState extends State<PrimaryButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
-  
+
   @override
   void initState() {
     super.initState();
@@ -44,39 +44,41 @@ class _PrimaryButtonState extends State<PrimaryButton>
       duration: const Duration(milliseconds: 100),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
-  bool get _isEnabled => !widget.isLoading && !widget.isDisabled && widget.onPressed != null;
-  
+
+  bool get _isEnabled =>
+      !widget.isLoading && !widget.isDisabled && widget.onPressed != null;
+
   void _onTapDown(TapDownDetails details) {
     if (_isEnabled) {
       _controller.forward();
       HapticFeedback.lightImpact();
     }
   }
-  
+
   void _onTapUp(TapUpDetails details) {
     _controller.reverse();
   }
-  
+
   void _onTapCancel() {
     _controller.reverse();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final bgColor = widget.backgroundColor ?? AppColors.primary;
     final fgColor = widget.textColor ?? Colors.white;
-    
+
     return GestureDetector(
       onTapDown: _onTapDown,
       onTapUp: _onTapUp,
@@ -92,12 +94,12 @@ class _PrimaryButtonState extends State<PrimaryButton>
               width: widget.width ?? double.infinity,
               height: widget.height,
               decoration: BoxDecoration(
-                color: _isEnabled ? bgColor : bgColor.withOpacity(0.5),
+                color: _isEnabled ? bgColor : bgColor.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: _isEnabled
                     ? [
                         BoxShadow(
-                          color: bgColor.withOpacity(0.3),
+                          color: bgColor.withValues(alpha: 0.3),
                           blurRadius: 12,
                           offset: const Offset(0, 6),
                         ),
@@ -150,7 +152,7 @@ class SecondaryButton extends StatelessWidget {
   final double height;
   final Color? borderColor;
   final Color? textColor;
-  
+
   const SecondaryButton({
     super.key,
     required this.text,
@@ -162,11 +164,11 @@ class SecondaryButton extends StatelessWidget {
     this.borderColor,
     this.textColor,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     final color = borderColor ?? AppColors.primary;
-    
+
     return SizedBox(
       width: width ?? double.infinity,
       height: height,
@@ -217,7 +219,7 @@ class IconButtonWithBadge extends StatelessWidget {
   final Color? iconColor;
   final Color? badgeColor;
   final double size;
-  
+
   const IconButtonWithBadge({
     super.key,
     required this.icon,
@@ -227,7 +229,7 @@ class IconButtonWithBadge extends StatelessWidget {
     this.badgeColor,
     this.size = 24,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -246,10 +248,7 @@ class IconButtonWithBadge extends StatelessWidget {
                 color: badgeColor ?? Colors.red,
                 shape: BoxShape.circle,
               ),
-              constraints: const BoxConstraints(
-                minWidth: 18,
-                minHeight: 18,
-              ),
+              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
               child: Text(
                 badgeCount! > 99 ? '99+' : badgeCount.toString(),
                 style: const TextStyle(
@@ -274,7 +273,7 @@ class ActionCard extends StatefulWidget {
   final BorderRadius? borderRadius;
   final Color? backgroundColor;
   final List<BoxShadow>? boxShadow;
-  
+
   const ActionCard({
     super.key,
     required this.child,
@@ -284,14 +283,14 @@ class ActionCard extends StatefulWidget {
     this.backgroundColor,
     this.boxShadow,
   });
-  
+
   @override
   State<ActionCard> createState() => _ActionCardState();
 }
 
 class _ActionCardState extends State<ActionCard> {
   bool _isPressed = false;
-  
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -301,18 +300,28 @@ class _ActionCardState extends State<ActionCard> {
       onTap: widget.onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        transform: Matrix4.identity()..scale(_isPressed ? 0.98 : 1.0),
+        transform: Matrix4.identity()
+          ..scaleByDouble(
+            _isPressed ? 0.98 : 1.0,
+            _isPressed ? 0.98 : 1.0,
+            _isPressed ? 0.98 : 1.0,
+            1.0,
+          ),
         padding: widget.padding,
         decoration: BoxDecoration(
           color: widget.backgroundColor ?? Colors.white,
           borderRadius: widget.borderRadius ?? BorderRadius.circular(16),
-          boxShadow: widget.boxShadow ?? [
-            BoxShadow(
-              color: Colors.black.withOpacity(_isPressed ? 0.05 : 0.08),
-              blurRadius: _isPressed ? 8 : 16,
-              offset: Offset(0, _isPressed ? 2 : 4),
-            ),
-          ],
+          boxShadow:
+              widget.boxShadow ??
+              [
+                BoxShadow(
+                  color: Colors.black.withValues(
+                    alpha: _isPressed ? 0.05 : 0.08,
+                  ),
+                  blurRadius: _isPressed ? 8 : 16,
+                  offset: Offset(0, _isPressed ? 2 : 4),
+                ),
+              ],
         ),
         child: widget.child,
       ),
@@ -334,7 +343,7 @@ class CustomTextField extends StatefulWidget {
   final int maxLines;
   final bool enabled;
   final FocusNode? focusNode;
-  
+
   const CustomTextField({
     super.key,
     this.controller,
@@ -350,7 +359,7 @@ class CustomTextField extends StatefulWidget {
     this.enabled = true,
     this.focusNode,
   });
-  
+
   @override
   State<CustomTextField> createState() => _CustomTextFieldState();
 }
@@ -358,14 +367,14 @@ class CustomTextField extends StatefulWidget {
 class _CustomTextFieldState extends State<CustomTextField> {
   late FocusNode _focusNode;
   bool _isFocused = false;
-  
+
   @override
   void initState() {
     super.initState();
     _focusNode = widget.focusNode ?? FocusNode();
     _focusNode.addListener(_onFocusChange);
   }
-  
+
   @override
   void dispose() {
     if (widget.focusNode == null) {
@@ -373,11 +382,11 @@ class _CustomTextFieldState extends State<CustomTextField> {
     }
     super.dispose();
   }
-  
+
   void _onFocusChange() {
     setState(() => _isFocused = _focusNode.hasFocus);
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
@@ -387,7 +396,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
         boxShadow: _isFocused
             ? [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.15),
+                  color: AppColors.primary.withValues(alpha: 0.15),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -407,7 +416,10 @@ class _CustomTextFieldState extends State<CustomTextField> {
           labelText: widget.labelText,
           hintText: widget.hintText,
           prefixIcon: widget.prefixIcon != null
-              ? Icon(widget.prefixIcon, color: _isFocused ? AppColors.primary : Colors.grey)
+              ? Icon(
+                  widget.prefixIcon,
+                  color: _isFocused ? AppColors.primary : Colors.grey,
+                )
               : null,
           suffixIcon: widget.suffixIcon,
           filled: true,
@@ -424,7 +436,10 @@ class _CustomTextFieldState extends State<CustomTextField> {
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Colors.red, width: 1),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
         ),
       ),
     );

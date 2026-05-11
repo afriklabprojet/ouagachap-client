@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// Modèle pour le chat entre client et coursier pour une commande
 class OrderChat {
   final int orderId;
@@ -40,7 +42,8 @@ class OrderChat {
 
     return OrderChat(
       orderId: _parseInt(json['order_id'] ?? json['id']),
-      orderUuid: json['order_uuid']?.toString() ?? json['uuid']?.toString() ?? '',
+      orderUuid:
+          json['order_uuid']?.toString() ?? json['uuid']?.toString() ?? '',
       clientId: _parseInt(json['client_id']),
       clientName: json['client_name']?.toString() ?? 'Client',
       clientPhone: json['client_phone']?.toString(),
@@ -71,7 +74,8 @@ class OrderChat {
     if (value is String) {
       try {
         return DateTime.parse(value);
-      } catch (_) {
+      } catch (e) {
+        debugPrint('[OrderChat] Invalid date format, using now(): $e');
         return DateTime.now();
       }
     }
