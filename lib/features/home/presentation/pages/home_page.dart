@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
@@ -49,9 +50,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _checkChangelogAndDeepLinks() async {
     // Attendre que le premier frame soit rendu avant d'afficher des dialogs
-    final completer = Completer<void>();
-    WidgetsBinding.instance.addPostFrameCallback((_) => completer.complete());
-    await completer.future;
+    await Future.delayed(Duration.zero);
     if (!mounted) return;
 
     // Vérifier et afficher le changelog si nouvelle version
@@ -126,6 +125,18 @@ class _HomePageState extends State<HomePage> {
             context.read<WalletBloc>().add(const LoadWallet());
             context.read<NotificationBloc>().add(const LoadNotifications());
             context.read<PromoBloc>().add(const LoadPromoCodes());
+            // Attendre que le wallet soit rechargé (ou timeout 3s)
+            await context
+                .read<WalletBloc>()
+                .stream
+                .firstWhere(
+                  (s) => s is! WalletLoading,
+                  orElse: () => WalletInitial(),
+                )
+                .timeout(
+                  const Duration(seconds: 3),
+                  onTimeout: () => WalletInitial(),
+                );
           },
           child: CustomScrollView(
             slivers: [
@@ -231,10 +242,20 @@ class _HomePageState extends State<HomePage> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.go('${Routes.home}/${Routes.createOrder}'),
         backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.textOnPrimary,
+        elevation: 6,
+        extendedPadding: const EdgeInsetsDirectional.only(start: 18, end: 22),
+        extendedIconLabelSpacing: 10,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         icon: const Icon(Icons.send_rounded, color: Colors.white),
-        label: const Text(
-          'Envoyer un colis',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        label: Text(
+          context.l10n.translate('create_order'),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: AppColors.textOnPrimary,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );
@@ -255,6 +276,21 @@ class _WelcomeBanner extends StatelessWidget {
         return pBalance != cBalance || p.runtimeType != c.runtimeType;
       },
       builder: (context, walletState) {
+        // Skeleton pendant le chargement
+        if (walletState is WalletLoading || walletState is WalletInitial) {
+          return Shimmer.fromColors(
+            baseColor: Colors.grey.shade300,
+            highlightColor: Colors.grey.shade100,
+            child: Container(
+              height: 160,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+              ),
+            ),
+          );
+        }
+
         int balance = 0;
         if (walletState is WalletLoaded) {
           balance = walletState.wallet.balance;

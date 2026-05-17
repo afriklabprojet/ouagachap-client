@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -56,9 +57,19 @@ class _PromoCarouselWidgetState extends State<PromoCarouselWidget> {
       },
       builder: (context, promoState) {
         if (promoState.status == PromoStatus.loading) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24),
-            child: Center(child: CircularProgressIndicator()),
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Shimmer.fromColors(
+              baseColor: Colors.grey.shade300,
+              highlightColor: Colors.grey.shade100,
+              child: Container(
+                height: 110,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
           );
         }
 
@@ -243,11 +254,47 @@ class _PromoCarouselWidgetState extends State<PromoCarouselWidget> {
                       ),
                     ),
                   ),
+                  _buildExpiryLabel(promo.expiresAt),
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildExpiryLabel(String? expiresAt) {
+    if (expiresAt == null) return const SizedBox.shrink();
+    final expiry = DateTime.tryParse(expiresAt);
+    if (expiry == null) return const SizedBox.shrink();
+    final daysLeft = expiry.difference(DateTime.now()).inDays;
+    if (daysLeft < 0) return const SizedBox.shrink(); // déjà expirée
+    final label = daysLeft == 0
+        ? 'Expire aujourd\'hui'
+        : daysLeft == 1
+            ? 'Expire demain'
+            : 'Expire dans $daysLeft j';
+    final isUrgent = daysLeft <= 3;
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.access_time,
+            size: 10,
+            color: isUrgent ? Colors.orange.shade200 : Colors.white60,
+          ),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            style: TextStyle(
+              color: isUrgent ? Colors.orange.shade200 : Colors.white60,
+              fontSize: 10,
+            ),
+          ),
+        ],
       ),
     );
   }

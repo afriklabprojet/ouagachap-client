@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/router/app_router.dart';
@@ -15,12 +16,17 @@ class ActiveOrdersBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<OrderBloc, OrderState>(
       buildWhen: (p, c) {
+        if (p.runtimeType != c.runtimeType) return true;
         if (p is OrdersLoaded && c is OrdersLoaded) {
-          final pActive = p.orders.where((o) => o.isActive).length;
-          final cActive = c.orders.where((o) => o.isActive).length;
-          return pActive != cActive || p.orders != c.orders;
+          final pActive = p.orders.where((o) => o.isActive).toList();
+          final cActive = c.orders.where((o) => o.isActive).toList();
+          if (pActive.length != cActive.length) return true;
+          for (int i = 0; i < pActive.length; i++) {
+            if (pActive[i] != cActive[i]) return true;
+          }
+          return false;
         }
-        return p.runtimeType != c.runtimeType;
+        return false;
       },
       builder: (context, state) {
         if (state is OrdersLoaded) {
@@ -66,9 +72,25 @@ class ActiveOrdersBanner extends StatelessWidget {
           );
         }
         if (state is OrderLoading) {
-          return const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(child: CircularProgressIndicator()),
+          return Shimmer.fromColors(
+            baseColor: Colors.grey.shade300,
+            highlightColor: Colors.grey.shade100,
+            child: SizedBox(
+              height: 200,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                scrollDirection: Axis.horizontal,
+                itemCount: 2,
+                separatorBuilder: (_, _) => const SizedBox(width: 16),
+                itemBuilder: (_, _) => Container(
+                  width: 280,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
           );
         }
         return const SizedBox.shrink();
