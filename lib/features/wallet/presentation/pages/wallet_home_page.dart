@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/animations.dart';
 import '../../../../core/widgets/cards.dart';
+import '../../../../core/widgets/empty_state_widget.dart';
 import '../../../../core/widgets/skeleton_loaders.dart';
-import '../../data/datasources/jeko_payment_datasource.dart';
-import '../bloc/jeko_payment_bloc.dart';
-import '../bloc/jeko_payment_event.dart';
-import '../bloc/jeko_payment_state.dart';
 import '../bloc/wallet_bloc.dart';
 import '../bloc/wallet_event.dart';
 import '../bloc/wallet_state.dart';
@@ -28,7 +26,6 @@ class _WalletHomePageState extends State<WalletHomePage> {
   void initState() {
     super.initState();
     context.read<WalletBloc>().add(const LoadWallet());
-    context.read<JekoPaymentBloc>().add(const LoadTransactionHistory());
   }
 
   @override
@@ -38,13 +35,22 @@ class _WalletHomePageState extends State<WalletHomePage> {
       body: RefreshIndicator(
         onRefresh: () async {
           context.read<WalletBloc>().add(const LoadWallet());
-          context.read<JekoPaymentBloc>().add(const LoadTransactionHistory());
+          await context
+              .read<WalletBloc>()
+              .stream
+              .firstWhere(
+                (s) => s is! WalletLoading,
+                orElse: () => WalletInitial(),
+              )
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () => WalletInitial(),
+              );
         },
         child: CustomScrollView(
           slivers: [
             SliverAppBar(
               title: Text(context.l10n.walletTitle),
-              centerTitle: true,
               floating: true,
               backgroundColor: Theme.of(context).colorScheme.surface,
               foregroundColor: Theme.of(context).colorScheme.onSurface,
@@ -79,6 +85,43 @@ class _WalletHomePageState extends State<WalletHomePage> {
         return pBal != cBal || p.runtimeType != c.runtimeType;
       },
       builder: (context, state) {
+        if (state is WalletLoading || state is WalletInitial) {
+          return Shimmer.fromColors(
+            baseColor: Colors.grey.shade300,
+            highlightColor: Colors.grey.shade100,
+            child: Container(
+              height: 160,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+          );
+        }
+
+        if (state is WalletError) {
+          return Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.red.shade200),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red),
+                const SizedBox(width: 12),
+                Expanded(child: Text(state.message)),
+                TextButton(
+                  onPressed: () =>
+                      context.read<WalletBloc>().add(const LoadWallet()),
+                  child: const Text('Réessayer'),
+                ),
+              ],
+            ),
+          );
+        }
+
         final balance = state is WalletLoaded
             ? state.wallet.balance.toDouble()
             : 0.0;
@@ -101,7 +144,7 @@ class _WalletHomePageState extends State<WalletHomePage> {
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: () =>
-            context.push('${Routes.wallet}/${Routes.walletRecharge}'),
+            context.push('${Routes.wallet}/${Routes.sappayRecharge}'),
         icon: const Icon(Icons.add_circle_outline, color: Colors.white),
         label: Text(
           context.l10n.recharge,
@@ -123,131 +166,51 @@ class _WalletHomePageState extends State<WalletHomePage> {
   }
 
   Widget _buildTransactionsSection() {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              context.l10n.recentTransactions,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            TextButton(
-              onPressed: () =>
-                  context.push('${Routes.wallet}/${Routes.jekoHistory}'),
-              child: Text(context.l10n.translate('see_all')),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _buildRecentTransactions(),
-      ],
-    );
-  }
-
-  Widget _buildRecentTransactions() {
-    return BlocBuilder<JekoPaymentBloc, JekoPaymentState>(
-      buildWhen: (p, c) =>
-          p.status != c.status || p.transactionHistory != c.transactionHistory,
+    return BlocBuilder<WalletBloc, WalletState>(
       builder: (context, state) {
-        if (state.status == JekoPaymentStatus.loadingHistory &&
-            state.transactionHistory.isEmpty) {
-          return const SkeletonTransactionListLoader(itemCount: 3);
-        }
-
-        if (state.transactionHistory.isEmpty) {
-          return Container(
-            padding: const EdgeInsets.symmetric(vertical: 32),
-            alignment: Alignment.center,
-            child: Text(
-              context.l10n.noTransactions,
-              style: TextStyle(color: Colors.grey[500]),
+        if (state is WalletLoading || state is WalletInitial) {
+          return Shimmer.fromColors(
+            baseColor: Colors.grey.shade300,
+            highlightColor: Colors.grey.shade100,
+            child: Column(
+              children: List.generate(
+                3,
+                (_) => const Padding(
+                  padding: EdgeInsets.only(bottom: 12),
+                  child: TransactionCardSkeleton(),
+                ),
+              ),
             ),
           );
         }
 
-        final recent = state.transactionHistory.take(5).toList();
-        return Column(
-          children: recent.asMap().entries.map((entry) {
-            return SlideInWidget(
-              delay: Duration(milliseconds: 50 * entry.key),
-              child: _buildTransactionTile(entry.value),
-            );
-          }).toList(),
-        );
+        if (state is WalletError) {
+          return Container(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            alignment: Alignment.center,
+            child: Column(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red.shade300, size: 40),
+                const SizedBox(height: 8),
+                Text(
+                  'Impossible de charger les transactions',
+                  style: TextStyle(color: Colors.grey[600]),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () =>
+                      context.read<WalletBloc>().add(const LoadWallet()),
+                  child: const Text('Réessayer'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // WalletLoaded : le repository ne retourne pas de transactions pour l'instant
+        return EmptyStateWidget.transactions();
       },
-    );
-  }
-
-  Widget _buildTransactionTile(JekoTransaction transaction) {
-    const iconMap = {
-      'wave': '🌊',
-      'orange': '🟠',
-      'mtn': '🟡',
-      'moov': '🔵',
-      'djamo': '💳',
-    };
-    final colorMap = <String, Color>{
-      'wave': AppColors.wavePrimary,
-      'orange': AppColors.orangeMoney,
-      'mtn': AppColors.mtnYellow,
-      'moov': AppColors.moovBlue,
-      'djamo': AppColors.djamoPurple,
-    };
-    final icon = iconMap[transaction.paymentMethod] ?? '💰';
-    final color = colorMap[transaction.paymentMethod] ?? Colors.grey;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Center(
-            child: Text(icon, style: const TextStyle(fontSize: 22)),
-          ),
-        ),
-        title: Text(
-          transaction.type == 'wallet_recharge'
-              ? 'Recharge portefeuille'
-              : 'Paiement commande',
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-        ),
-        subtitle: Text(
-          transaction.paymentMethodName,
-          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-        ),
-        trailing: Text(
-          transaction.formattedAmount,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
-            color: transaction.isSuccessful
-                ? Colors.green
-                : transaction.isFailed
-                ? Colors.red
-                : Colors.orange,
-          ),
-        ),
-      ),
     );
   }
 }

@@ -146,6 +146,16 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
   }
 
   void _previousStep() {
+    // Si on revient de l'étape de confirmation (étape 2 → 1),
+    // réinitialise le prix afin qu'il soit recalculé lors du prochain avancement.
+    if (_formCubit.state.currentStep == 2) {
+      _formCubit.updatePrice(
+        price: 0,
+        distance: 0,
+        basePrice: 0,
+        distancePrice: 0,
+      );
+    }
     _formCubit.goBack();
     _pageController.previousPage(
       duration: const Duration(milliseconds: 300),
@@ -310,7 +320,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
             },
             child: Scaffold(
               appBar: AppBar(
-                title: const Text('Nouvelle livraison'),
+                title: Text(context.l10n.newDelivery),
                 leading: IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () => context.go(Routes.home),
@@ -416,7 +426,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
             Expanded(
               child: OutlinedButton(
                 onPressed: _previousStep,
-                child: const Text('Précédent'),
+                child: Text(context.l10n.translate('previous')),
               ),
             ),
           if (formState.currentStep > 0) const SizedBox(width: 12),

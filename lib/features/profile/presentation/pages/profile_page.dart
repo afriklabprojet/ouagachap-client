@@ -1,12 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import '../../../../core/di/injection.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/router/app_router.dart';
-import '../../../../core/services/theme_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/animations.dart';
@@ -15,8 +14,21 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  late final Future<PackageInfo> _packageInfoFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _packageInfoFuture = PackageInfo.fromPlatform();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,24 +77,32 @@ class ProfilePage extends StatelessWidget {
                           Container(
                             width: 80,
                             height: 80,
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               color: AppColors.primaryLight,
                               shape: BoxShape.circle,
-                              image:
-                                  user.avatar != null && user.avatar!.isNotEmpty
-                                  ? DecorationImage(
-                                      image: NetworkImage(user.avatar!),
-                                      fit: BoxFit.cover,
-                                    )
-                                  : null,
                             ),
-                            child: user.avatar == null || user.avatar!.isEmpty
-                                ? const Icon(
-                                    Icons.person,
-                                    size: 40,
-                                    color: AppColors.primary,
-                                  )
-                                : null,
+                            child: ClipOval(
+                              child: user.avatar != null && user.avatar!.isNotEmpty
+                                  ? CachedNetworkImage(
+                                      imageUrl: user.avatar!,
+                                      width: 80,
+                                      height: 80,
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) => const Center(
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+                                      errorWidget: (context, url, error) => const Icon(
+                                        Icons.person,
+                                        size: 40,
+                                        color: AppColors.primary,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.person,
+                                      size: 40,
+                                      color: AppColors.primary,
+                                    ),
+                            ),
                           ),
                           const SizedBox(height: 16),
                           // Name
@@ -113,13 +133,42 @@ class ProfilePage extends StatelessWidget {
                             ),
                           ],
                           const SizedBox(height: 16),
+                          // Badge vérification
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                user.isPhoneVerified
+                                    ? Icons.verified
+                                    : Icons.warning_amber_rounded,
+                                size: 16,
+                                color: user.isPhoneVerified
+                                    ? AppColors.success
+                                    : Colors.orange,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                user.isPhoneVerified
+                                    ? 'Numéro vérifié'
+                                    : 'Numéro non vérifié',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: user.isPhoneVerified
+                                      ? AppColors.success
+                                      : Colors.orange,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
                           // Edit button
                           OutlinedButton.icon(
                             onPressed: () => context.go(
                               '${Routes.profile}/${Routes.editProfile}',
                             ),
                             icon: const Icon(Icons.edit, size: 18),
-                            label: const Text('Modifier'),
+                            label: Text(context.l10n.translate('edit')),
                           ),
                         ],
                       ),
@@ -128,12 +177,21 @@ class ProfilePage extends StatelessWidget {
                     // Menu items
                     _buildMenuItem(
                       icon: Icons.history,
-                      title: 'Historique des commandes',
+                      title: context.l10n.orderHistory,
                       onTap: () => context.go(Routes.ordersHistory),
                     ),
+                    if (!user.isPhoneVerified)
+                      _buildMenuItem(
+                        icon: Icons.phone_android,
+                        title: 'Vérifier mon numéro',
+                        onTap: () => context.go(
+                          '${Routes.profile}/${Routes.phoneVerification}',
+                        ),
+                        color: Colors.orange,
+                      ),
                     _buildMenuItem(
                       icon: Icons.location_on_outlined,
-                      title: 'Mes adresses',
+                      title: context.l10n.myAddresses,
                       onTap: () =>
                           context.go('${Routes.profile}/${Routes.addresses}'),
                     ),
@@ -151,18 +209,17 @@ class ProfilePage extends StatelessWidget {
                           context.go('${Routes.profile}/${Routes.support}'),
                     ),
                     _buildMenuItem(
-                      icon: Icons.accessibility_new,
-                      title: 'Accessibilité',
+                      icon: Icons.settings_outlined,
+                      title: context.l10n.settings,
                       onTap: () => context.go(
-                        '${Routes.profile}/${Routes.accessibility}',
+                        '${Routes.profile}/${Routes.settings}',
                       ),
                     ),
-                    _buildThemeToggle(),
                     _buildMenuItem(
                       icon: Icons.info_outline,
                       title: context.l10n.about,
                       onTap: () async {
-                        final packageInfo = await PackageInfo.fromPlatform();
+                        final packageInfo = await _packageInfoFuture;
                         if (!context.mounted) return;
                         final year = DateTime.now().year;
                         showAboutDialog(
@@ -197,7 +254,7 @@ class ProfilePage extends StatelessWidget {
                     const SizedBox(height: 32),
                     // Version
                     FutureBuilder<PackageInfo>(
-                      future: PackageInfo.fromPlatform(),
+                      future: _packageInfoFuture,
                       builder: (context, snapshot) {
                         final version = snapshot.data?.version ?? '...';
                         return Text(
@@ -225,57 +282,27 @@ class ProfilePage extends StatelessWidget {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
+    Color? color,
   }) {
+    final itemColor = color ?? AppColors.primary;
     return FadeInWidget(
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(
+            color: color != null ? color.withValues(alpha: 0.3) : Colors.grey.shade200,
+          ),
         ),
         child: ListTile(
-          leading: Icon(icon, color: AppColors.primary),
-          title: Text(title),
-          trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+          leading: Icon(icon, color: itemColor),
+          title: Text(title, style: TextStyle(color: color != null ? itemColor : null)),
+          trailing: Icon(Icons.chevron_right, color: color ?? Colors.grey),
           onTap: onTap,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildThemeToggle() {
-    final themeService = getIt<ThemeService>();
-    return FadeInWidget(
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: ListenableBuilder(
-          listenable: themeService,
-          builder: (context, _) {
-            return ListTile(
-              leading: Icon(
-                themeService.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                color: AppColors.primary,
-              ),
-              title: const Text('Thème sombre'),
-              trailing: Switch(
-                value: themeService.isDarkMode,
-                onChanged: (_) => themeService.toggleTheme(),
-                activeThumbColor: AppColors.primary,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            );
-          },
         ),
       ),
     );
