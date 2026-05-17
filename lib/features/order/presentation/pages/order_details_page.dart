@@ -569,9 +569,20 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
   }
 
   void _navigateToLiveTracking(Order order) {
-    context.push(
-      '${Routes.liveTracking}/${order.id}?tracking=${order.trackingNumber}',
-    );
+    final params = <String, String>{
+      'tracking': order.trackingNumber,
+      'pickupLat': order.pickupLatitude.toString(),
+      'pickupLng': order.pickupLongitude.toString(),
+      'deliveryLat': order.deliveryLatitude.toString(),
+      'deliveryLng': order.deliveryLongitude.toString(),
+    };
+    final courierName = order.courier?.name;
+    final courierPhone = order.courier?.phone;
+    if (courierName != null) params['courierName'] = courierName;
+    if (courierPhone != null) params['courierPhone'] = courierPhone;
+
+    final query = params.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&');
+    context.push('${Routes.liveTracking}/${order.id}?$query');
   }
 
   Color _getStatusColor(OrderStatus status) =>

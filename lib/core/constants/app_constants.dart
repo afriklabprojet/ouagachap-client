@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../config/app_config.dart';
 
 /// Constantes de l'application OUAGA CHAP
 class AppConstants {
@@ -11,20 +12,23 @@ class AppConstants {
   static const String appName = 'OUAGA CHAP';
   static const String appVersion = '1.0.0';
 
-  /// URL de base de l'API - change automatiquement selon le mode
+  /// URL de base de l'API - délègue à AppConfig quand disponible
   static String get baseUrl {
-    if (kDebugMode) {
-      return 'http://127.0.0.1:8000/api/v1';
+    if (AppConfig.initialized) {
+      return AppConfig.baseUrl;
     }
     return 'https://ouagachap.pro/api/v1';
   }
 
   /// URL WebSocket pour le suivi en temps réel (Laravel Reverb)
   static String get wsBaseUrl {
-    if (kDebugMode) {
-      return 'http://127.0.0.1:8080';
+    if (AppConfig.initialized) {
+      return AppConfig.wsBaseUrl;
     }
-    return 'https://ws.ouagachap.pro';
+    if (kDebugMode) {
+      return 'http://10.0.2.2:8080';
+    }
+    return 'https://ouagachap.pro';
   }
 
   /// Clé d'application WebSocket (Laravel Reverb/Pusher).

@@ -274,14 +274,30 @@ class CacheInterceptor extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    // Cache les réponses GET réussies
-    if (response.requestOptions.method == 'GET' && response.statusCode == 200) {
+    final method = response.requestOptions.method.toUpperCase();
+
+    if (method == 'GET' && response.statusCode == 200) {
+      // Cache les réponses GET réussies
       final cacheKey = _getCacheKey(response.requestOptions);
       _cache[cacheKey] = _CachedResponse(
         data: response.data,
         expiry: DateTime.now().add(cacheDuration),
       );
+    } else if ((method == 'POST' ||
+            method == 'PUT' ||
+            method == 'PATCH' ||
+            method == 'DELETE') &&
+        response.statusCode != null &&
+        response.statusCode! < 400) {
+      // Invalide le cache pour la ressource de base afin d'éviter les données périmées
+      final path = response.requestOptions.path;
+      // Extrait le chemin de base (ex: /orders/123/cancel → /orders)
+      final segments = path.split('/').where((s) => s.isNotEmpty).toList();
+      if (segments.isNotEmpty) {
+        invalidate('/${segments.first}');
+      }
     }
+
     handler.next(response);
   }
 

@@ -53,9 +53,9 @@ import '../../features/support/presentation/bloc/support_bloc.dart';
 import '../../features/incoming/data/datasources/incoming_order_remote_datasource.dart';
 import '../../features/incoming/data/repositories/incoming_order_repository.dart';
 import '../../features/incoming/presentation/bloc/incoming_order_bloc.dart';
-import '../../features/wallet/data/datasources/jeko_payment_datasource.dart';
-import '../../features/wallet/data/repositories/jeko_payment_repository.dart';
-import '../../features/wallet/presentation/bloc/jeko_payment_bloc.dart';
+import '../../features/wallet/data/repositories/sappay_repository_impl.dart';
+import '../../features/wallet/domain/repositories/sappay_repository.dart';
+import '../../features/wallet/presentation/bloc/sappay_payment_bloc.dart';
 import '../../features/address/data/repositories/address_repository.dart';
 import '../../features/address/presentation/bloc/address_bloc.dart';
 import '../../features/tracking/presentation/bloc/live_tracking_bloc.dart';
@@ -169,9 +169,6 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton<IncomingOrderRemoteDataSource>(
     () => IncomingOrderRemoteDataSource(getIt<ApiClient>()),
   );
-  getIt.registerLazySingleton<JekoPaymentRemoteDataSource>(
-    () => JekoPaymentRemoteDataSourceImpl(getIt<ApiClient>()),
-  );
 
   // Repositories
   getIt.registerLazySingleton<AuthRepository>(
@@ -198,17 +195,12 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton<IncomingOrderRepository>(
     () => IncomingOrderRepository(getIt<IncomingOrderRemoteDataSource>()),
   );
-  getIt.registerLazySingleton<JekoPaymentRepository>(
-    () => JekoPaymentRepository(getIt<JekoPaymentRemoteDataSource>()),
+  getIt.registerLazySingleton<SappayRepository>(
+    () => SappayRepositoryImpl(getIt<ApiClient>()),
   );
   getIt.registerLazySingleton<AddressRepository>(
     () => AddressRepository(getIt<ApiClient>()),
   );
-  // PromoRepository et PromoBloc désactivés — feature non intégré dans
-  // le flow commande (TODO Sprint 5: intégrer dans create_order_page)
-  // getIt.registerLazySingleton<PromoRepository>(
-  //   () => PromoRepository(getIt<ApiClient>()),
-  // );
 
   // Use Cases - Auth
   getIt.registerLazySingleton(() => RegisterUseCase(getIt<AuthRepository>()));
@@ -248,9 +240,7 @@ Future<void> configureDependencies() async {
   // BLoCs
   getIt.registerFactory<AuthBloc>(
     () => AuthBloc(
-      registerUseCase: getIt<RegisterUseCase>(),
       verifyOtpUseCase: getIt<VerifyOtpUseCase>(),
-      loginUseCase: getIt<LoginUseCase>(),
       getCurrentUserUseCase: getIt<GetCurrentUserUseCase>(),
       logoutUseCase: getIt<LogoutUseCase>(),
       authRepository: getIt<AuthRepository>(),
@@ -281,11 +271,8 @@ Future<void> configureDependencies() async {
   getIt.registerFactory<IncomingOrderBloc>(
     () => IncomingOrderBloc(getIt<IncomingOrderRepository>()),
   );
-  getIt.registerFactory<JekoPaymentBloc>(
-    () => JekoPaymentBloc(
-      getIt<JekoPaymentRepository>(),
-      getIt<SharedPreferences>(),
-    ),
+  getIt.registerFactory<SappayPaymentBloc>(
+    () => SappayPaymentBloc(getIt<SappayRepository>()),
   );
   getIt.registerFactory<AddressBloc>(
     () => AddressBloc(getIt<AddressRepository>()),
